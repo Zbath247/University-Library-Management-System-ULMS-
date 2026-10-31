@@ -52,6 +52,7 @@ export const AttendanceCheckIn: React.FC = () => {
   const [activeSession, setActiveSession] = useState<any | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Form Fields
   const [memberCode, setMemberCode] = useState('');
@@ -136,17 +137,35 @@ export const AttendanceCheckIn: React.FC = () => {
   }, []);
 
   // Check if visitor is currently checked in
-  const checkActiveSession = async (code: string) => {
+  const checkActiveSession = async (code: string, showFeedback = false) => {
     if (!code) return;
     try {
+      if (showFeedback) setIsRefreshing(true);
       const res = await api.get(`/attendance/lookup/${encodeURIComponent(code)}`);
-      if (res.data?.data?.currentSession) {
-        setActiveSession(res.data.data.currentSession);
+      const session = res.data?.data?.currentSession;
+      if (session) {
+        setActiveSession(session);
+        if (showFeedback) {
+          if (session.status === 'PENDING_APPROVAL') {
+            setSuccessMessage('⏳ សំណើរបស់អ្នកកំពុងស្ថិតក្នុង [រង់ចាំការអនុម័ត] នៅឡើយ សូមរង់ចាំ Admin អនុម័តបន្តិច!');
+          } else if (session.status === 'CHECKED_IN') {
+            setSuccessMessage('🎉 សំណើត្រូវបានអនុម័តរួចរាល់ហើយ!');
+          }
+        }
       } else {
         setActiveSession(null);
+        if (showFeedback) {
+          setSuccessMessage('ℹ️ មិនមានសំណើសកម្មទេ ឬសំណើត្រូវបានបញ្ចប់/បោះបង់រួចរាល់។');
+        }
       }
     } catch (e) {
-      // Ignore lookup network errors
+      if (showFeedback) {
+        setErrorMessage('បរាជ័យក្នុងការតភ្ជាប់ទៅកាន់ម៉ាស៊ីនបម្រើ');
+      }
+    } finally {
+      if (showFeedback) {
+        setTimeout(() => setIsRefreshing(false), 500);
+      }
     }
   };
 
@@ -563,11 +582,12 @@ export const AttendanceCheckIn: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => profile?.memberCode && checkActiveSession(profile.memberCode)}
-                    className="flex-1 py-3 px-4 rounded-xl font-bold text-xs bg-white/10 hover:bg-white/20 text-white border border-white/20 flex items-center justify-center gap-2 transition"
+                    disabled={isRefreshing}
+                    onClick={() => profile?.memberCode && checkActiveSession(profile.memberCode, true)}
+                    className="flex-1 py-3 px-4 rounded-xl font-bold text-xs bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/20 flex items-center justify-center gap-2 transition disabled:opacity-60 cursor-pointer"
                   >
-                    <RefreshCw className="w-4 h-4 text-duc-gold" />
-                    <span>ពិនិត្យស្ថានភាពម្តងទៀត</span>
+                    <RefreshCw className={`w-4 h-4 text-duc-gold ${isRefreshing ? 'animate-spin' : ''}`} />
+                    <span>{isRefreshing ? 'កំពុងពិនិត្យ...' : 'ពិនិត្យស្ថានភាពម្តងទៀត'}</span>
                   </button>
 
                   <button
@@ -576,7 +596,7 @@ export const AttendanceCheckIn: React.FC = () => {
                       if (!window.confirm('តើអ្នកពិតជាចង់បោះបង់សំណើនេះមែនទេ?')) return;
                       await handleCheckOut();
                     }}
-                    className="py-3 px-3.5 rounded-xl font-bold text-xs bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition"
+                    className="py-3 px-3.5 rounded-xl font-bold text-xs bg-rose-500/20 hover:bg-rose-500/30 active:scale-95 text-rose-300 border border-rose-500/30 transition cursor-pointer"
                   >
                     បោះបង់
                   </button>
