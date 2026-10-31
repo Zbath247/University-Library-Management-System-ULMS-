@@ -49,10 +49,10 @@ app.use(
   })
 );
 
-// Rate limiting (300 requests per 15 minutes per IP for general API)
+// Rate limiting (generous for library kiosk / dev usage)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: config.NODE_ENV === 'production' ? 10000 : 100000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
