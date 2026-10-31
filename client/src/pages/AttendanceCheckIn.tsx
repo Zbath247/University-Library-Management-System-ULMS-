@@ -592,10 +592,7 @@ export const AttendanceCheckIn: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={async () => {
-                      if (!window.confirm('តើអ្នកពិតជាចង់បោះបង់សំណើនេះមែនទេ?')) return;
-                      await handleCheckOut();
-                    }}
+                    onClick={() => handleCheckOut()}
                     className="py-3 px-3.5 rounded-xl font-bold text-xs bg-rose-500/20 hover:bg-rose-500/30 active:scale-95 text-rose-300 border border-rose-500/30 transition cursor-pointer"
                   >
                     បោះបង់
