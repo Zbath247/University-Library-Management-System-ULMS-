@@ -22,6 +22,16 @@ const AppContent: React.FC = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setIsLoginModalOpen(true);
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => {
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-slate-50 text-slate-800">
       {/* Persistent Left Sidebar on Desktop & Off-canvas Drawer on Mobile */}
