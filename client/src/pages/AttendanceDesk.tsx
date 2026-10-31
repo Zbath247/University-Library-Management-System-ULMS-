@@ -367,93 +367,114 @@ export const AttendanceDesk: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page Title & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-2">
-            <UserCheck className="w-6 h-6 text-duc-blue" />
-            <span>កត់ត្រាវត្តមានចូល-ចេញ & ខ្ចី-សង (Attendance & Loans)</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            គ្រប់គ្រងវត្តមានផ្ទាល់ និងពិនិត្យអនុម័តសំណើខ្ចី-សងសៀវភៅរបស់និស្សិតក្នុងបណ្ណាល័យ DUC
-          </p>
-        </div>
+      {/* Page Title & Action Card */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-sm space-y-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-duc-blue/10 border border-duc-blue/20 flex items-center justify-center shrink-0 mt-0.5 text-duc-blue">
+              <UserCheck className="w-5 h-5 text-duc-gold" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-extrabold text-slate-800 leading-tight">
+                វត្តមានចូល-ចេញ & ខ្ចី-សង
+              </h1>
+              <p className="text-xs text-slate-500 mt-0.5 leading-snug">
+                គ្រប់គ្រងវត្តមានផ្ទាល់ និងពិនិត្យអនុម័តសំណើខ្ចី-សងសៀវភៅ DUC
+              </p>
+            </div>
+          </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <button
-            onClick={() => setShowQrModal(true)}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-duc-gold hover:bg-amber-400 text-slate-900 font-bold rounded-xl text-xs sm:text-sm shadow-sm transition transform active:scale-95"
-          >
-            <QrCode className="w-4 h-4 text-slate-900" />
-            <span>ប័ណ្ណ QR Code ចូលបណ្ណាល័យ</span>
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => setShowQrModal(true)}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-duc-gold hover:bg-amber-400 active:scale-95 text-slate-900 font-bold rounded-xl text-xs shadow-sm transition cursor-pointer"
+            >
+              <QrCode className="w-4 h-4 text-slate-900 shrink-0" />
+              <span>ប័ណ្ណ QR Standee</span>
+            </button>
 
-          <a
-            href="/checkin"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span>បើកទំព័រស្កេន</span>
-          </a>
+            <a
+              href="/checkin"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-center gap-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-semibold rounded-xl text-xs transition cursor-pointer"
+              title="បើកទំព័រស្កេន"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span className="hidden xs:inline">ទំព័រស្កេន</span>
+            </a>
 
-          <button
-            onClick={fetchStatsAndActive}
-            className="p-2.5 text-slate-600 hover:text-duc-blue bg-white border border-slate-200 hover:border-slate-300 rounded-xl transition shadow-sm"
-            title="ទាញយកទិន្នន័យថ្មី"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+            <button
+              onClick={fetchStatsAndActive}
+              className="p-2 text-slate-600 hover:text-duc-blue bg-white border border-slate-200 hover:border-slate-300 active:scale-95 rounded-xl transition shadow-sm cursor-pointer shrink-0"
+              title="ទាញយកទិន្នន័យថ្មី"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* KPI Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
         {/* Currently Inside */}
-        <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-duc-blue to-duc-navy text-white p-4 rounded-2xl shadow-md border border-duc-blue/30 relative overflow-hidden">
-          <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400 text-[10px] text-emerald-300 font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-            LIVE
+        <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-duc-blue to-duc-navy text-white p-3.5 sm:p-4 rounded-2xl shadow-md border border-duc-blue/30 relative overflow-hidden flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[11px] text-duc-gold font-bold uppercase tracking-wider">
+              វត្តមានផ្ទាល់
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400 text-[10px] text-emerald-300 font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              LIVE
+            </span>
           </div>
-          <div className="text-xs text-duc-gold font-bold uppercase tracking-wider mb-1">
-            កំពុងនៅក្នុងបណ្ណាល័យ
-          </div>
-          <div className="text-3xl font-black">{stats.currentlyInside}</div>
-          <div className="text-[11px] text-slate-300 mt-1 flex items-center gap-1">
-            <Users className="w-3.5 h-3.5 text-duc-gold" /> មនុស្សក្នុងបរិវេណផ្ទាល់
+          <div>
+            <div className="text-3xl font-black text-white">{stats.currentlyInside}</div>
+            <div className="text-[11px] text-slate-300 mt-0.5 flex items-center gap-1">
+              <Users className="w-3.5 h-3.5 text-duc-gold shrink-0" />
+              <span>មនុស្សក្នុងបណ្ណាល័យ</span>
+            </div>
           </div>
         </div>
 
         {/* Total Today */}
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl shadow-sm border border-slate-200/90 flex flex-col justify-between">
           <div className="text-xs text-slate-500 font-bold mb-1">អ្នកចូលសរុបថ្ងៃនេះ</div>
-          <div className="text-2xl font-black text-slate-800">{stats.totalToday}</div>
-          <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5 text-slate-400" /> ចំនួនលើកចូលថ្ងៃនេះ
+          <div>
+            <div className="text-2xl font-black text-slate-800">{stats.totalToday}</div>
+            <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1 truncate">
+              <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span>លើកចូលថ្ងៃនេះ</span>
+            </div>
           </div>
         </div>
 
         {/* Reading */}
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl shadow-sm border border-slate-200/90 flex flex-col justify-between">
           <div className="text-xs text-blue-600 font-bold mb-1 flex items-center gap-1">
-            <BookOpen className="w-3.5 h-3.5" /> អានសៀវភៅ
+            <BookOpen className="w-3.5 h-3.5 shrink-0" />
+            <span>អានសៀវភៅ</span>
           </div>
-          <div className="text-2xl font-black text-slate-800">
-            {stats.purposeBreakdown?.READING || 0}
+          <div>
+            <div className="text-2xl font-black text-slate-800">
+              {stats.purposeBreakdown?.READING || 0}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-0.5 truncate">ស្វ័យសិក្សា & អាន</div>
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">ស្វ័យសិក្សា និងអាន</div>
         </div>
 
         {/* Research */}
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl shadow-sm border border-slate-200/90 flex flex-col justify-between">
           <div className="text-xs text-indigo-600 font-bold mb-1 flex items-center gap-1">
-            <Search className="w-3.5 h-3.5" /> ស្រាវជ្រាវ
+            <Search className="w-3.5 h-3.5 shrink-0" />
+            <span>ស្រាវជ្រាវ</span>
           </div>
-          <div className="text-2xl font-black text-slate-800">
-            {stats.purposeBreakdown?.RESEARCH || 0}
+          <div>
+            <div className="text-2xl font-black text-slate-800">
+              {stats.purposeBreakdown?.RESEARCH || 0}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-0.5 truncate">កិច្ចការ & ស្រាវជ្រាវ</div>
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">ធ្វើកិច្ចការ និងស្រាវជ្រាវ</div>
         </div>
 
         {/* Borrow & Return */}
@@ -462,19 +483,24 @@ export const AttendanceDesk: React.FC = () => {
             setSelectedPurpose('BORROW_RETURN');
             setActiveTab('HISTORY');
           }}
-          className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 cursor-pointer hover:border-amber-400 hover:shadow-md transition group"
+          className="col-span-2 sm:col-span-1 bg-white p-3.5 sm:p-4 rounded-2xl shadow-sm border border-slate-200/90 cursor-pointer hover:border-amber-400 hover:shadow-md transition group flex flex-col justify-between"
           title="ចុចដើម្បីមើលកំណត់ត្រាខ្ចី-សងទាំងអស់"
         >
           <div className="text-xs text-amber-600 font-bold mb-1 flex items-center justify-between">
             <span className="flex items-center gap-1">
-              <RefreshCw className="w-3.5 h-3.5" /> ខ្ចី-សងសៀវភៅ
+              <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+              <span>ខ្ចី-សងសៀវភៅ</span>
             </span>
-            <span className="text-[10px] text-amber-700 bg-amber-50 group-hover:bg-amber-100 px-1.5 py-0.5 rounded font-semibold transition">មើលបញ្ជី →</span>
+            <span className="text-[10px] text-amber-700 bg-amber-50 group-hover:bg-amber-100 px-1.5 py-0.5 rounded font-bold transition">
+              មើលបញ្ជី →
+            </span>
           </div>
-          <div className="text-2xl font-black text-slate-800">
-            {stats.purposeBreakdown?.BORROW_RETURN || 0}
+          <div>
+            <div className="text-2xl font-black text-slate-800">
+              {stats.purposeBreakdown?.BORROW_RETURN || 0}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-0.5 truncate">ប្រវត្តិខ្ចី-សង</div>
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">ចុចដើម្បីមើលប្រវត្តិខ្ចី-សង</div>
         </div>
       </div>
 
@@ -482,53 +508,53 @@ export const AttendanceDesk: React.FC = () => {
       {pendingRequests.length > 0 && activeTab !== 'PENDING' && (
         <div
           onClick={() => setActiveTab('PENDING')}
-          className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-amber-400/20 to-amber-500/20 border-2 border-amber-400 flex items-center justify-between cursor-pointer hover:bg-amber-500/25 transition shadow-sm animate-pulse"
+          className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-400/20 to-amber-500/15 border-2 border-amber-400/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 cursor-pointer hover:bg-amber-500/25 transition shadow-sm animate-pulse"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-900 font-bold flex items-center justify-center shadow">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-900 font-bold flex items-center justify-center shadow shrink-0">
               <Bell className="w-5 h-5 animate-bounce" />
             </div>
-            <div>
-              <div className="font-extrabold text-amber-900 text-sm">
-                មានសំណើខ្ចី-សងសៀវភៅចំនួន {pendingRequests.length} កំពុងរង់ចាំការអនុម័តពី Admin/បណ្ណារក្ស!
+            <div className="min-w-0">
+              <div className="font-extrabold text-amber-900 text-xs sm:text-sm leading-snug">
+                មានសំណើខ្ចី-សងសៀវភៅ {pendingRequests.length} រង់ចាំការអនុម័ត!
               </div>
-              <div className="text-xs text-amber-800">
-                ចុចទីនេះដើម្បីពិនិត្យឈ្មោះសៀវភៅ និងអនុម័ត (Approve) ជូននិស្សិត។
+              <div className="text-[11px] sm:text-xs text-amber-800 mt-0.5 truncate">
+                ចុចទីនេះដើម្បីពិនិត្យឈ្មោះសៀវភៅ និងអនុម័តជូននិស្សិត
               </div>
             </div>
           </div>
-          <button className="px-3 py-1.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold rounded-lg text-xs shadow transition">
+          <button className="w-full sm:w-auto px-4 py-2 bg-amber-400 hover:bg-amber-500 active:scale-95 text-slate-900 font-bold rounded-xl text-xs shadow transition text-center shrink-0 cursor-pointer">
             ពិនិត្យ & អនុម័ត ({pendingRequests.length})
           </button>
         </div>
       )}
 
-      {/* Tabs Switcher */}
-      <div className="flex border-b border-slate-200 gap-2">
+      {/* Tabs Switcher with Smooth Horizontal Scroll */}
+      <div className="flex border-b border-slate-200 gap-1 sm:gap-2 overflow-x-auto scrollbar-none pb-0.5">
         <button
           onClick={() => setActiveTab('LIVE')}
-          className={`pb-3 px-4 font-bold text-sm border-b-2 transition flex items-center gap-2 ${
+          className={`pb-2.5 px-3 sm:px-4 font-bold text-xs sm:text-sm border-b-2 transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
             activeTab === 'LIVE'
               ? 'border-duc-blue text-duc-blue'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
-          <Users className="w-4 h-4" />
-          <span>កំពុងនៅក្នុងបណ្ណាល័យផ្ទាល់ ({stats.currentlyInside})</span>
+          <Users className="w-4 h-4 shrink-0" />
+          <span>វត្តមានផ្ទាល់ ({stats.currentlyInside})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('PENDING')}
-          className={`pb-3 px-4 font-bold text-sm border-b-2 transition flex items-center gap-2 ${
+          className={`pb-2.5 px-3 sm:px-4 font-bold text-xs sm:text-sm border-b-2 transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
             activeTab === 'PENDING'
               ? 'border-amber-500 text-amber-700'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
-          <Clock className="w-4 h-4 text-amber-500" />
+          <Clock className="w-4 h-4 text-amber-500 shrink-0" />
           <span>សំណើរង់ចាំអនុម័ត</span>
           {pendingRequests.length > 0 && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-black bg-amber-500 text-white animate-pulse">
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white animate-pulse">
               {pendingRequests.length}
             </span>
           )}
@@ -536,14 +562,14 @@ export const AttendanceDesk: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('HISTORY')}
-          className={`pb-3 px-4 font-bold text-sm border-b-2 transition flex items-center gap-2 ${
+          className={`pb-2.5 px-3 sm:px-4 font-bold text-xs sm:text-sm border-b-2 transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
             activeTab === 'HISTORY'
               ? 'border-duc-blue text-duc-blue'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
-          <Calendar className="w-4 h-4" />
-          <span>ប្រវត្តិកត់ត្រាវត្តមានទាំងអស់</span>
+          <Calendar className="w-4 h-4 shrink-0" />
+          <span>ប្រវត្តិកត់ត្រាទាំងអស់</span>
         </button>
       </div>
 
