@@ -17,6 +17,8 @@ import {
   X,
   ExternalLink,
   PlusCircle,
+  Zap,
+  Search,
 } from 'lucide-react';
 import { BookCoverUploadField } from '../components/BookCoverUploadField';
 
@@ -37,8 +39,11 @@ export const ScannerDesk: React.FC = () => {
 
   // Processing & Review Data
   const [processingError, setProcessingError] = useState<string | null>(null);
+  const [processingMessage, setProcessingMessage] = useState<string>('');
   const [reviewData, setReviewData] = useState<any | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
+  const [isLookingUpIsbn, setIsLookingUpIsbn] = useState<boolean>(false);
+  const [isbnLookupMessage, setIsbnLookupMessage] = useState<string | null>(null);
 
   // Form Fields for Manual Verification
   const [titleKhmer, setTitleKhmer] = useState('');
@@ -85,10 +90,15 @@ export const ScannerDesk: React.FC = () => {
     setTitlePagePreview(URL.createObjectURL(file));
   };
 
-  const handleStartProcessing = async () => {
+  const handleStartProcessing = async (skipAi = false) => {
     if (!coverFile && !titlePageFile) return;
 
     setStep('PROCESSING');
+    setProcessingMessage(
+      skipAi
+        ? '⚡ កំពុងភ្ជាប់រូបភាព និងបើកផ្ទាំងផ្ទៀងផ្ទាត់រហ័ស (Fast Mode)...'
+        : 'ដំណើរការ OCR កំពុងស្កេនស្រង់អត្ថបទ និងបំប្លែងទិន្នន័យតាមរយៈ AI...'
+    );
     setProcessingError(null);
 
     try {
@@ -117,8 +127,8 @@ export const ScannerDesk: React.FC = () => {
         });
       }
 
-      // 4. Trigger OCR & AI Normalization
-      await api.post(`/scan-sessions/${sId}/process`);
+      // 4. Trigger OCR & AI or Fast Skip
+      await api.post(`/scan-sessions/${sId}/process?skipAi=${skipAi}`);
 
       // 5. Fetch Complete Review Data
       const reviewRes = await api.get(`/scan-sessions/${sId}/review`);
@@ -126,7 +136,7 @@ export const ScannerDesk: React.FC = () => {
       setReviewData(data);
 
       // Populate Editable Form
-      const extracted = data.extracted;
+      const extracted = data?.extracted || {};
       setTitleEnglish(extracted.title || '');
       setTitleKhmer(extracted.title || '');
       setSubtitle(extracted.subtitle || '');
@@ -145,12 +155,12 @@ export const ScannerDesk: React.FC = () => {
       setBarcode(extracted.isbn13 || extracted.isbn10 || generatedAccession);
 
       // Check for duplicate match
-      if (data.duplicateCheck?.isDuplicate) {
+      if (data?.duplicateCheck?.isDuplicate) {
         setSaveMode('ADD_COPY_TO_EXISTING');
       }
 
       // Automatically use scanned cover photo or preview
-      const coverScanImg = data.images?.find((img: any) => img.imageType === 'COVER');
+      const coverScanImg = data?.images?.find((img: any) => img.imageType === 'COVER');
       if (coverScanImg) {
         setCoverImageUrl(`/api/v1/scan-sessions/${sId}/images/${coverScanImg.id}`);
       } else if (coverPreview) {
@@ -162,6 +172,59 @@ export const ScannerDesk: React.FC = () => {
       console.error('Scan processing error:', err);
       setProcessingError(err.response?.data?.error?.message || err.message || 'Processing failed');
       setStep('CAPTURE');
+    }
+  };
+
+  const handleSkipAiToReview = async () => {
+    if (!sessionId) {
+      setStep('REVIEW');
+      return;
+    }
+    try {
+      await api.post(`/scan-sessions/${sessionId}/process?skipAi=true`);
+      const reviewRes = await api.get(`/scan-sessions/${sessionId}/review`);
+      const data = reviewRes.data?.data;
+      if (data) {
+        setReviewData(data);
+      }
+      setStep('REVIEW');
+    } catch {
+      setStep('REVIEW');
+    }
+  };
+
+  const handleLookupIsbn = async (isbnValue?: string) => {
+    const raw = (isbnValue || isbn13 || isbn10 || barcode || '').trim();
+    if (!raw) {
+      setIsbnLookupMessage('⚠️ សូមបញ្ចូលលេខ ISBN ដើម្បីស្វែងរក');
+      return;
+    }
+    setIsLookingUpIsbn(true);
+    setIsbnLookupMessage(null);
+    try {
+      const res = await api.get(`/scan-sessions/lookup-isbn/${encodeURIComponent(raw)}`);
+      const data = res.data?.data;
+      if (data?.match) {
+        const m = data.match;
+        if (m.title) {
+          setTitleEnglish(m.title);
+          if (!titleKhmer) setTitleKhmer(m.title);
+        }
+        if (m.subtitle) setSubtitle(m.subtitle);
+        if (m.authors?.length) setAuthors(m.authors.join(', '));
+        if (m.publisher) setPublisher(m.publisher);
+        if (m.publicationYear) setPublicationYear(String(m.publicationYear));
+        if (m.isbn10 && !isbn10) setIsbn10(m.isbn10);
+        if (m.isbn13 && !isbn13) setIsbn13(m.isbn13);
+        if (m.coverImageUrl && !coverImageUrl) setCoverImageUrl(m.coverImageUrl);
+        setIsbnLookupMessage('✅ រកឃើញទិន្នន័យពីប្រព័ន្ធ ISBN ដោយជោគជ័យ!');
+      } else {
+        setIsbnLookupMessage('ℹ️ មិនមានទិន្នន័យលើប្រព័ន្ធ ISBN អន្តរជាតិទេ សូមបំពេញព័ត៌មានដោយដៃ');
+      }
+    } catch {
+      setIsbnLookupMessage('ℹ️ មិនអាចទាញទិន្នន័យបានទេ សូមបំពេញព័ត៌មានដោយដៃ');
+    } finally {
+      setIsLookingUpIsbn(false);
     }
   };
 
@@ -346,7 +409,8 @@ export const ScannerDesk: React.FC = () => {
             <div className="text-xs text-slate-500 text-center sm:text-left">
               {coverFile || titlePageFile ? (
                 <span className="text-emerald-600 font-bold flex items-center gap-1.5 justify-center sm:justify-start">
-                  <CheckCircle className="w-4 h-4 text-emerald-500" /> បានថតរូបរួចរាល់ សូមចុចប៊ូតុងដើម្បីដំណើរការ AI
+                  <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>បានថតរួចរាល់! ជ្រើសរើសវិធីសាស្ត្របញ្ចូលខាងក្រោម៖</span>
                 </span>
               ) : (
                 <span className="text-slate-500">
@@ -355,32 +419,60 @@ export const ScannerDesk: React.FC = () => {
               )}
             </div>
 
-            <button
-              onClick={handleStartProcessing}
-              disabled={!coverFile && !titlePageFile}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-duc-blue hover:bg-duc-navy active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 text-duc-gold" />
-              <span>ដំណើរការស្កេន OCR & AI</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+              {/* Option 1: Fast Mode (Bypass AI completely - instant < 1s) */}
+              <button
+                type="button"
+                onClick={() => handleStartProcessing(true)}
+                disabled={!coverFile && !titlePageFile}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                title="ភ្ជាប់រូបភាពដែលបានថត ហើយចូលទៅបំពេញទិន្នន័យផ្ទាល់ភ្លាមៗ ដោយមិនបាច់រង់ចាំ AI"
+              >
+                <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
+                <span>ថតរួចផ្ទៀងផ្ទាត់ភ្លាម (មិនប្រើ AI)</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              {/* Option 2: Full OCR & AI Normalization */}
+              <button
+                type="button"
+                onClick={() => handleStartProcessing(false)}
+                disabled={!coverFile && !titlePageFile}
+                className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                title="ប្រើប្រាស់ AI ស្កេនស្រង់អត្ថបទពីទំព័រសៀវភៅដោយស្វ័យប្រវត្តិ"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-duc-gold" />
+                <span>ស្កេនដោយ AI</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* STEP 2: PROCESSING INDICATOR */}
       {step === 'PROCESSING' && (
-        <div className="bg-white rounded-2xl p-12 border border-slate-200 text-center space-y-4 shadow-sm animate-scaleIn">
+        <div className="bg-white rounded-2xl p-8 sm:p-12 border border-slate-200 text-center space-y-4 shadow-sm animate-scaleIn">
           <div className="relative w-20 h-20 mx-auto">
             <div className="w-20 h-20 border-4 border-duc-gold/30 border-t-duc-gold rounded-full animate-spin" />
             <Sparkles className="w-8 h-8 text-duc-gold absolute inset-0 m-auto animate-pulse" />
           </div>
           <h3 className="font-bold text-slate-800 text-lg animate-pulse">
-            {t.processingMessage}
+            {processingMessage || t.processingMessage}
           </h3>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            ដំណើរការ OCR កំពុងស្កេនស្រង់អត្ថបទ និងបំប្លែងទិន្នន័យតាមរយៈ AI Normalizer ព្រមទាំងស្វែងរកផ្ទៀងផ្ទាត់លេខ ISBN ពី Google Books & Open Library។
+            ដំណើរការ OCR កំពុងស្កេនស្រង់អត្ថបទ និងបំប្លែងទិន្នន័យ... ប្រសិនបើមិនចង់រង់ចាំ លោកអ្នកអាចចុចរំលងដើម្បីចូលបំពេញទិន្នន័យដោយផ្ទាល់បានភ្លាមៗ!
           </p>
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={handleSkipAiToReview}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow transition cursor-pointer"
+            >
+              <Zap className="w-4 h-4 fill-white" />
+              <span>⚡ រំលង AI ហើយចូលបំពេញទិន្នន័យភ្លាម (Skip AI)</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -560,12 +652,42 @@ export const ScannerDesk: React.FC = () => {
                   />
                 </div>
 
+                <div className="sm:col-span-2 p-3 bg-gradient-to-r from-blue-50 to-indigo-50/50 rounded-xl border border-blue-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2">
+                    <Search className="w-4 h-4 text-blue-600 shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-blue-900 block">
+                        ទាញយកទិន្នន័យស្វ័យប្រវត្តិតាមលេខ ISBN (Auto-Fill from ISBN):
+                      </span>
+                      <span className="text-[11px] text-blue-700/80">
+                        វាយ ឬស្កេនលេខ ISBN ខាងក្រោម រួចចុចប៊ូតុងនេះដើម្បីទាញទិន្នន័យសៀវភៅភ្លាមៗ
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleLookupIsbn()}
+                    disabled={isLookingUpIsbn || (!isbn13.trim() && !isbn10.trim() && !barcode.trim())}
+                    className="shrink-0 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-lg shadow-sm transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Search className={`w-3.5 h-3.5 ${isLookingUpIsbn ? 'animate-spin' : ''}`} />
+                    <span>{isLookingUpIsbn ? 'កំពុងស្វែងរក...' : 'ទាញយកទិន្នន័យភ្លាម'}</span>
+                  </button>
+                </div>
+
+                {isbnLookupMessage && (
+                  <div className="sm:col-span-2 text-xs font-medium px-3.5 py-2 rounded-lg bg-slate-100 border border-slate-200 text-slate-700">
+                    {isbnLookupMessage}
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">ISBN-13</label>
                   <input
                     type="text"
                     value={isbn13}
                     onChange={(e) => setIsbn13(e.target.value)}
+                    placeholder="ឧ. 9780132350884"
                     className="w-full p-2.5 text-sm font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-duc-blue focus:outline-none"
                   />
                 </div>
@@ -576,6 +698,7 @@ export const ScannerDesk: React.FC = () => {
                     type="text"
                     value={isbn10}
                     onChange={(e) => setIsbn10(e.target.value)}
+                    placeholder="ឧ. 0132350882"
                     className="w-full p-2.5 text-sm font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-duc-blue focus:outline-none"
                   />
                 </div>

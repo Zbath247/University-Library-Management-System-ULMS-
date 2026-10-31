@@ -27,6 +27,7 @@ const upload = multer({
 router.use(requireRole([Role.LIBRARIAN, Role.ADMIN]));
 
 router.post('/', ScannerController.createSession);
+router.get('/lookup-isbn/:isbn', ScannerController.lookupIsbnDirect);
 router.post('/:id/images', upload.single('image'), ScannerController.uploadImage);
 router.post('/:id/images/:imageId/rotate', ScannerController.rotateImage);
 router.get('/:id/images/:imageId', ScannerController.streamImage);

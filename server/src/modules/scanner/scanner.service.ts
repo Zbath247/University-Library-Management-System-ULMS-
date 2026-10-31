@@ -93,7 +93,7 @@ export class ScannerService {
     };
   }
 
-  static async processOcrAndAi(sessionId: string) {
+  static async processOcrAndAi(sessionId: string, options?: { skipAi?: boolean }) {
     const session = await prisma.bookScanSession.findUnique({
       where: { id: sessionId },
       include: { images: true },
@@ -101,6 +101,15 @@ export class ScannerService {
 
     if (!session) throw new Error('SESSION_NOT_FOUND');
     if (session.images.length === 0) throw new Error('NO_IMAGES_UPLOADED: Please capture at least one image');
+
+    // Fast Mode: Bypass heavy OCR & Gemini AI, transition directly to NEEDS_REVIEW in < 15ms
+    if (options?.skipAi) {
+      return prisma.bookScanSession.update({
+        where: { id: sessionId },
+        data: { status: ScanStatus.NEEDS_REVIEW },
+        include: { images: true, candidates: true },
+      });
+    }
 
     await prisma.bookScanSession.update({
       where: { id: sessionId },
@@ -242,6 +251,34 @@ export class ScannerService {
         },
       });
     }
+  }
+
+  static async lookupDirectIsbn(isbn: string) {
+    const clean = IsbnUtils.clean(isbn);
+    if (!clean) {
+      throw new Error('INVALID_ISBN: Please provide an ISBN number');
+    }
+
+    const google = new GoogleBooksProvider(config.GOOGLE_BOOKS_API_KEY);
+    const openLib = new OpenLibraryProvider();
+
+    const [googleResult, openLibResult] = await Promise.allSettled([
+      google.lookup(clean),
+      openLib.lookup(clean),
+    ]);
+
+    const googleData = googleResult.status === 'fulfilled' ? googleResult.value : null;
+    const openLibData = openLibResult.status === 'fulfilled' ? openLibResult.value : null;
+    const match = googleData || openLibData;
+
+    return {
+      isbn: clean,
+      match,
+      candidates: {
+        googleBooks: googleData,
+        openLibrary: openLibData,
+      },
+    };
   }
 
   static async getReviewDesk(sessionId: string) {

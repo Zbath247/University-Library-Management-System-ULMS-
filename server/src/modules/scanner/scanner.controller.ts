@@ -94,11 +94,22 @@ export class ScannerController {
 
   static async processOcr(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
+    const skipAi = req.query.skipAi === 'true' || req.body?.skipAi === true;
     try {
-      const session = await ScannerService.processOcrAndAi(id);
+      const session = await ScannerService.processOcrAndAi(id, { skipAi });
       res.json({ success: true, data: session });
     } catch (err: any) {
       res.status(500).json({ success: false, error: { message: err.message } });
+    }
+  }
+
+  static async lookupIsbnDirect(req: Request, res: Response): Promise<void> {
+    const { isbn } = req.params;
+    try {
+      const result = await ScannerService.lookupDirectIsbn(isbn);
+      res.json({ success: true, data: result });
+    } catch (err: any) {
+      res.status(400).json({ success: false, error: { message: err.message } });
     }
   }
 
