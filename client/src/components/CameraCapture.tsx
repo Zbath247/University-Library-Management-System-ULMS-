@@ -24,7 +24,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -35,34 +35,64 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
     };
   }, []);
 
+  // Close this camera if another camera is started on the page
+  useEffect(() => {
+    const handleCloseOthers = (e: any) => {
+      if (e.detail !== label) {
+        stopCamera();
+      }
+    };
+    window.addEventListener('camera:close_others', handleCloseOthers);
+    return () => {
+      window.removeEventListener('camera:close_others', handleCloseOthers);
+    };
+  }, [label]);
+
+  // Ensure stream is bound to video element whenever isCameraActive becomes true
+  useEffect(() => {
+    if (isCameraActive && videoRef.current && streamRef.current) {
+      const video = videoRef.current;
+      video.srcObject = streamRef.current;
+      video.play().catch((err) => console.warn('Camera video play issue:', err));
+    }
+  }, [isCameraActive]);
+
   const startCamera = async () => {
     setCameraError(null);
     stopCamera();
+
+    // Notify other camera instance to close first to prevent hardware lock
+    window.dispatchEvent(new CustomEvent('camera:close_others', { detail: label }));
 
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Camera API is not supported in this browser environment');
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: facingMode },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        },
-        audio: false,
-      });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: facingMode },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        });
+      } catch {
+        // Fallback for laptop webcams where facingMode constraints are rejected
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+      }
 
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
       setIsCameraActive(true);
     } catch (err: any) {
       console.warn('Camera access issue:', err);
       setCameraError(
-        'មិនអាចបើកកាមេរ៉ាបានទេ (សូមអនុញ្ញាត Camera Permissions ឬប្រើ Upload ជំនួស) / Camera access denied'
+        'មិនអាចបើកកាមេរ៉ាបានទេ (សូមអនុញ្ញាត Camera Permissions ក្នុង Browser ឬប្រើប៊ូតុងជ្រើសរូបភាពជំនួស)'
       );
       setIsCameraActive(false);
     }
@@ -72,6 +102,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
     setIsCameraActive(false);
   };
@@ -136,7 +169,19 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       {/* Camera Live Viewfinder */}
       {isCameraActive ? (
         <div className="relative rounded-xl overflow-hidden bg-black aspect-[4/3] flex items-center justify-center shadow-inner">
-          <video ref={videoRef} playsInline autoPlay muted className="w-full h-full object-cover" />
+          <video
+            ref={(el) => {
+              videoRef.current = el;
+              if (el && streamRef.current && el.srcObject !== streamRef.current) {
+                el.srcObject = streamRef.current;
+                el.play().catch((err) => console.warn('Video stream play issue:', err));
+              }
+            }}
+            playsInline
+            autoPlay
+            muted
+            className="w-full h-full object-cover"
+          />
 
           {/* Viewfinder Guide Overlay with Animated Laser Scanning Line */}
           <div className="absolute inset-4 border-2 border-dashed border-duc-gold/60 rounded-lg pointer-events-none flex items-center justify-center overflow-hidden">
