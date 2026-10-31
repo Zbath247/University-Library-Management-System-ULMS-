@@ -233,79 +233,82 @@ export const ScannerDesk: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page Header */}
-      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-duc-blue">
-              <Scan className="w-6 h-6 text-duc-gold" />
-              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800">
-                {t.scannerTitle}
-              </h1>
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/90 shadow-sm space-y-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-duc-blue/10 border border-duc-blue/20 flex items-center justify-center shrink-0 mt-0.5 text-duc-blue">
+              <Scan className="w-5 h-5 text-duc-gold" />
             </div>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              {t.scannerSubtitle}
-            </p>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-extrabold text-slate-800 leading-tight">
+                ស្កេនសៀវភៅតាម AI & កាតាឡុក
+              </h1>
+              <p className="text-xs text-slate-500 mt-0.5 leading-snug">
+                ថតរូបក្របមុខ និងទំព័របោះពុម្ព ដើម្បីស្រង់ទិន្នន័យស្វ័យប្រវត្តិ
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Stepper Progress */}
-            <div className="flex items-center overflow-x-auto w-full sm:w-auto gap-2 text-xs font-bold py-1">
-              <span
-                className={`px-3 py-1 rounded-full whitespace-nowrap shrink-0 ${
-                  step === 'CAPTURE'
-                    ? 'bg-duc-blue text-white shadow-sm'
-                    : 'bg-emerald-50 text-emerald-700'
-                }`}
-              >
-                {t.stepCapture}
-              </span>
-              <span className="text-slate-300 shrink-0">→</span>
-              <span
-                className={`px-3 py-1 rounded-full whitespace-nowrap shrink-0 ${
-                  step === 'PROCESSING'
-                    ? 'bg-duc-blue text-white animate-pulse shadow-sm'
-                    : step === 'REVIEW' || step === 'SUCCESS'
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : 'bg-slate-100 text-slate-400'
-                }`}
-              >
-                {t.stepProcessing}
-              </span>
-              <span className="text-slate-300 shrink-0">→</span>
-              <span
-                className={`px-3 py-1 rounded-full whitespace-nowrap shrink-0 ${
-                  step === 'REVIEW'
-                    ? 'bg-duc-blue text-white shadow-sm'
-                    : step === 'SUCCESS'
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : 'bg-slate-100 text-slate-400'
-                }`}
-              >
-                {t.stepReview}
-              </span>
-            </div>
+          <Link
+            to="/catalog?action=new"
+            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-duc-blue hover:text-white text-slate-700 font-bold text-xs rounded-xl transition border border-slate-200 shadow-sm cursor-pointer"
+            title="បញ្ចូលសៀវភៅថ្មីដោយដៃ"
+          >
+            <PlusCircle className="w-3.5 h-3.5 text-duc-gold" />
+            <span>+ បញ្ចូលដោយដៃ</span>
+          </Link>
+        </div>
 
-            <Link
-              to="/catalog?action=new"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-duc-blue/10 hover:bg-duc-blue hover:text-white text-duc-blue font-bold text-xs rounded-xl transition border border-duc-blue/20 shrink-0 shadow-sm"
-              title="បញ្ចូលសៀវភៅថ្មីដោយដៃ"
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span>+ បញ្ចូលដោយដៃ</span>
-            </Link>
+        {/* 3-Step Clean Stepper Progress Bar */}
+        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+          <div
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl text-xs font-bold transition text-center ${
+              step === 'CAPTURE'
+                ? 'bg-duc-blue text-white shadow-sm'
+                : 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+            }`}
+          >
+            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">១</span>
+            <span className="truncate">ថតរូប</span>
+          </div>
+
+          <div
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl text-xs font-bold transition text-center ${
+              step === 'PROCESSING'
+                ? 'bg-duc-blue text-white animate-pulse shadow-sm'
+                : step === 'REVIEW' || step === 'SUCCESS'
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                : 'bg-slate-100 text-slate-400'
+            }`}
+          >
+            <span className="w-4 h-4 rounded-full bg-black/10 flex items-center justify-center text-[10px]">២</span>
+            <span className="truncate">AI & OCR</span>
+          </div>
+
+          <div
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl text-xs font-bold transition text-center ${
+              step === 'REVIEW'
+                ? 'bg-duc-blue text-white shadow-sm'
+                : step === 'SUCCESS'
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                : 'bg-slate-100 text-slate-400'
+            }`}
+          >
+            <span className="w-4 h-4 rounded-full bg-black/10 flex items-center justify-center text-[10px]">៣</span>
+            <span className="truncate">ផ្ទៀងផ្ទាត់</span>
           </div>
         </div>
       </div>
 
       {processingError && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-center justify-between">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-center justify-between shadow-sm animate-shake">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 flex-shrink-0" />
             <span>{processingError}</span>
           </div>
-          <button onClick={() => setProcessingError(null)} className="text-red-500 hover:text-red-800">
+          <button onClick={() => setProcessingError(null)} className="text-red-500 hover:text-red-800 cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -313,10 +316,11 @@ export const ScannerDesk: React.FC = () => {
 
       {/* STEP 1: CAPTURE IMAGES */}
       {step === 'CAPTURE' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <CameraCapture
-              label={t.captureCover}
+              stepNumber="១"
+              label="ថតរូបក្របមុខ (Front Cover)"
               onImageCaptured={handleCoverCaptured}
               previewUrl={coverPreview}
               onClear={() => {
@@ -326,7 +330,8 @@ export const ScannerDesk: React.FC = () => {
             />
 
             <CameraCapture
-              label={t.captureTitlePage}
+              stepNumber="២"
+              label="ថតទំព័រព័ត៌មានបោះពុម្ព (Title / ISBN Page)"
               onImageCaptured={handleTitlePageCaptured}
               previewUrl={titlePagePreview}
               onClear={() => {
@@ -336,14 +341,27 @@ export const ScannerDesk: React.FC = () => {
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
+          {/* Action Trigger Box */}
+          <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-xs text-slate-500 text-center sm:text-left">
+              {coverFile || titlePageFile ? (
+                <span className="text-emerald-600 font-bold flex items-center gap-1.5 justify-center sm:justify-start">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" /> បានថតរូបរួចរាល់ សូមចុចប៊ូតុងដើម្បីដំណើរការ AI
+                </span>
+              ) : (
+                <span className="text-slate-500">
+                  💡 សូមថតរូបក្របមុខ ឬទំព័រព័ត៌មានយ៉ាងហោច ១ សន្លឹក
+                </span>
+              )}
+            </div>
+
             <button
               onClick={handleStartProcessing}
               disabled={!coverFile && !titlePageFile}
-              className="flex items-center gap-2 px-6 py-3 bg-duc-blue hover:bg-duc-navy text-white font-bold text-sm rounded-xl shadow-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-duc-blue hover:bg-duc-navy active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-duc-gold" />
-              <span>{t.runOcrAi}</span>
+              <span>ដំណើរការស្កេន OCR & AI</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

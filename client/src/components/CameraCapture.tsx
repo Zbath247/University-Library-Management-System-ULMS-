@@ -4,6 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 interface CameraCaptureProps {
   label: string;
+  stepNumber?: string;
   onImageCaptured: (file: File) => void;
   previewUrl?: string | null;
   onClear?: () => void;
@@ -12,6 +13,7 @@ interface CameraCaptureProps {
 
 export const CameraCapture: React.FC<CameraCaptureProps> = ({
   label,
+  stepNumber,
   onImageCaptured,
   previewUrl,
   onClear,
@@ -110,19 +112,30 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
   };
 
   return (
-    <div className="border border-slate-200 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-bold text-slate-800">{label}</span>
-        {previewUrl && (
-          <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">
-            <CheckCircle className="w-3.5 h-3.5" /> រួចរាល់ / Ready
+    <div className="border border-slate-200/90 rounded-2xl bg-white p-3.5 sm:p-4 shadow-sm hover:shadow transition-shadow">
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center gap-2 min-w-0">
+          {stepNumber && (
+            <span className="w-5 h-5 rounded-full bg-duc-blue text-white text-[11px] font-bold flex items-center justify-center shrink-0 shadow-sm">
+              {stepNumber}
+            </span>
+          )}
+          <span className="text-xs sm:text-sm font-bold text-slate-800 truncate">{label}</span>
+        </div>
+        {previewUrl ? (
+          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-bold bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full shrink-0">
+            <CheckCircle className="w-3.5 h-3.5" /> រួចរាល់
+          </span>
+        ) : (
+          <span className="text-[10px] text-slate-400 font-medium shrink-0 bg-slate-100 px-2 py-0.5 rounded-full">
+            ទាមទារ
           </span>
         )}
       </div>
 
       {/* Camera Live Viewfinder */}
       {isCameraActive ? (
-        <div className="relative rounded-lg overflow-hidden bg-black aspect-[4/3] flex items-center justify-center">
+        <div className="relative rounded-xl overflow-hidden bg-black aspect-[4/3] flex items-center justify-center shadow-inner">
           <video ref={videoRef} playsInline autoPlay muted className="w-full h-full object-cover" />
 
           {/* Viewfinder Guide Overlay with Animated Laser Scanning Line */}
@@ -130,7 +143,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
             {/* Animated Laser Scan Bar */}
             <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-duc-gold to-transparent shadow-[0_0_12px_#C5A880] animate-scanLine" />
             <span className="text-[11px] text-white/95 bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm shadow z-10 font-medium">
-              តម្រង់ទំព័រសៀវភៅក្នុងប្រអប់ / Align book inside frame
+              តម្រង់ទំព័រសៀវភៅក្នុងប្រអប់ / Align book
             </span>
           </div>
 
@@ -139,7 +152,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
             <button
               type="button"
               onClick={toggleFacingMode}
-              className="p-2.5 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur transition"
+              className="p-2.5 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur transition cursor-pointer"
               title="ប្តូរកាមេរ៉ាមុខ/ក្រោយ / Switch Camera"
             >
               <RefreshCw className="w-5 h-5" />
@@ -148,7 +161,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
             <button
               type="button"
               onClick={capturePhoto}
-              className="w-14 h-14 rounded-full border-4 border-white bg-red-600 hover:bg-red-700 shadow-lg flex items-center justify-center transition scale-100 active:scale-95"
+              className="w-14 h-14 rounded-full border-4 border-white bg-red-600 hover:bg-red-700 shadow-lg flex items-center justify-center transition scale-100 active:scale-95 cursor-pointer"
               title="ថតរូប / Capture"
             >
               <div className="w-6 h-6 rounded-full bg-white" />
@@ -157,7 +170,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
             <button
               type="button"
               onClick={stopCamera}
-              className="p-2.5 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur transition"
+              className="p-2.5 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur transition cursor-pointer"
               title="បិទកាមេរ៉ា / Close"
             >
               <X className="w-5 h-5" />
@@ -166,7 +179,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
         </div>
       ) : previewUrl ? (
         /* Image Preview Box with Controls */
-        <div className="relative rounded-lg overflow-hidden bg-slate-100 aspect-[4/3] flex items-center justify-center border border-slate-200">
+        <div className="relative rounded-xl overflow-hidden bg-slate-100 aspect-[16/10] sm:aspect-[4/3] flex items-center justify-center border border-slate-200">
           <img src={previewUrl} alt={label} className="w-full h-full object-contain" />
 
           <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/60 p-1 rounded-lg backdrop-blur-sm">
@@ -174,7 +187,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
               <button
                 type="button"
                 onClick={onRotate}
-                className="p-1.5 text-white hover:text-duc-gold rounded hover:bg-white/10 transition"
+                className="p-1.5 text-white hover:text-duc-gold rounded hover:bg-white/10 transition cursor-pointer"
                 title={t.rotate}
               >
                 <RotateCw className="w-4 h-4" />
@@ -184,7 +197,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
               <button
                 type="button"
                 onClick={onClear}
-                className="p-1.5 text-white hover:text-red-400 rounded hover:bg-white/10 transition"
+                className="p-1.5 text-white hover:text-red-400 rounded hover:bg-white/10 transition cursor-pointer"
                 title={t.replaceImage}
               >
                 <X className="w-4 h-4" />
@@ -194,34 +207,36 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
         </div>
       ) : (
         /* Standby Selection View */
-        <div className="rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 aspect-[4/3] flex flex-col items-center justify-center p-4 text-center">
-          <Camera className="w-10 h-10 text-slate-400 mb-2" />
+        <div className="rounded-xl border-2 border-dashed border-slate-200 hover:border-duc-gold/60 bg-slate-50/70 p-4 sm:p-5 flex flex-col items-center justify-center text-center transition-colors min-h-[160px]">
+          <div className="w-11 h-11 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center text-duc-blue mb-2.5">
+            <Camera className="w-5 h-5 text-duc-gold" />
+          </div>
           <p className="text-xs text-slate-600 font-medium mb-3">
-            ថតដោយផ្ទាល់ ឬបញ្ចូលរូបភាពពីឧបករណ៍របស់អ្នក
+            ថតផ្ទាល់តាមកាមេរ៉ា ឬជ្រើសរូបភាពពីម៉ាស៊ីន
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2 w-full max-w-xs">
             <button
               type="button"
               onClick={startCamera}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-duc-blue text-white rounded-lg text-xs font-semibold hover:bg-duc-navy transition shadow-sm"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-duc-blue text-white rounded-xl text-xs font-bold hover:bg-duc-navy active:scale-95 transition shadow-sm cursor-pointer"
             >
-              <Camera className="w-3.5 h-3.5" />
+              <Camera className="w-3.5 h-3.5 text-duc-gold" />
               <span>{t.openCamera}</span>
             </button>
 
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-100 transition shadow-sm"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 active:scale-95 transition shadow-sm cursor-pointer"
             >
-              <Upload className="w-3.5 h-3.5" />
+              <Upload className="w-3.5 h-3.5 text-slate-500" />
               <span>{t.uploadFile}</span>
             </button>
           </div>
 
           {cameraError && (
-            <div className="mt-2 flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 p-1.5 rounded">
+            <div className="mt-2.5 flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 border border-amber-200/60 p-2 rounded-lg">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{cameraError}</span>
             </div>
