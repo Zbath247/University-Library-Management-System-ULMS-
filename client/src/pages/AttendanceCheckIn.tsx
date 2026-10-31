@@ -338,6 +338,8 @@ export const AttendanceCheckIn: React.FC = () => {
     setErrorMessage(null);
     setSuccessMessage(null);
 
+    const isPending = activeSession?.status === 'PENDING_APPROVAL';
+
     try {
       const res = await api.post('/attendance/check-out', {
         memberCode: profile.memberCode,
@@ -347,10 +349,18 @@ export const AttendanceCheckIn: React.FC = () => {
       const duration = res.data?.data?.durationMinutes ?? 0;
       setActiveSession(null);
       setSuccessMessage(
-        `👋 អរគុណសម្រាប់ការអាន និងស្រាវជ្រាវ! បានកត់ត្រាការចាកចេញដោយជោគជ័យ (រយៈពេលស្នាក់នៅ: ${duration} នាទី)។`
+        isPending
+          ? '✅ បានបោះបង់សំណើដោយជោគជ័យ។'
+          : `👋 អរគុណសម្រាប់ការអាន និងស្រាវជ្រាវ! បានកត់ត្រាការចាកចេញដោយជោគជ័យ (រយៈពេលស្នាក់នៅ: ${duration} នាទី)។`
       );
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.error || err.message || 'បរាជ័យក្នុងការកត់ត្រាការចាកចេញ');
+      // If server reports no active checkin found, the session is already completed or cancelled
+      if (err.response?.status === 400 || err.response?.data?.error?.includes('មិនមានវត្តមានសកម្ម')) {
+        setActiveSession(null);
+        setSuccessMessage('✅ សំណើត្រូវបានបោះបង់ ឬបញ្ចប់រួចរាល់ហើយ។');
+      } else {
+        setErrorMessage(err.response?.data?.error || err.message || 'បរាជ័យក្នុងការកត់ត្រាការចាកចេញ');
+      }
     } finally {
       setLoading(false);
     }

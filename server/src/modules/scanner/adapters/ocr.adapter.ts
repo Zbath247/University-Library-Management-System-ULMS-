@@ -1,28 +1,42 @@
+import * as path from 'path';
 import { IOcrAdapter, OcrResult } from '../types';
 import { createWorker } from 'tesseract.js';
 
 export class TesseractOcrAdapter implements IOcrAdapter {
-  async extractText(imageBuffer: Buffer, _mimeType: string, languages: string[] = ['eng']): Promise<OcrResult> {
-    const langString = languages.join('+');
-    let worker;
+  private static workerPromise: Promise<any> | null = null;
+
+  private static async getWorker(): Promise<any> {
+    if (!this.workerPromise) {
+      this.workerPromise = (async () => {
+        // Point cachePath to local server directory where eng.traineddata and khm.traineddata exist
+        const cachePath = path.resolve(process.cwd());
+        const worker = await createWorker('eng+khm', 1, {
+          cachePath,
+          gzip: false,
+        });
+        return worker;
+      })();
+    }
+    return this.workerPromise;
+  }
+
+  async extractText(imageBuffer: Buffer, _mimeType: string, _languages: string[] = ['eng']): Promise<OcrResult> {
     try {
-      worker = await createWorker(langString);
+      const worker = await TesseractOcrAdapter.getWorker();
       const ret = await worker.recognize(imageBuffer);
-      await worker.terminate();
 
       return {
         rawText: ret.data.text,
         confidence: ret.data.confidence ? Math.round(ret.data.confidence * 100) / 100 : null,
-        blocks: ret.data.blocks?.map((b) => ({
+        blocks: ret.data.blocks?.map((b: any) => ({
           text: b.text,
           confidence: b.confidence ? Math.round(b.confidence * 100) / 100 : null,
         })),
       };
     } catch (err) {
-      if (worker) {
-        await worker.terminate().catch(() => {});
-      }
       console.error('Tesseract OCR error:', err);
+      // Reset cached worker on error so it can recover on subsequent runs
+      TesseractOcrAdapter.workerPromise = null;
       throw new Error(`OCR_EXTRACTION_FAILED: ${err instanceof Error ? err.message : String(err)}`);
     }
   }

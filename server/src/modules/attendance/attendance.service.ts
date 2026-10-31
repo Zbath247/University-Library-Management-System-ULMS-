@@ -161,6 +161,20 @@ export class AttendanceService {
     });
 
     if (!record) {
+      // Idempotent cancellation/checkout check: if already completed, succeed cleanly
+      if (params.attendanceId) {
+        const existing = await prisma.attendance.findUnique({ where: { id: params.attendanceId } });
+        if (existing && (existing.status === 'REJECTED' || existing.status === 'CHECKED_OUT')) {
+          return {
+            record: existing,
+            durationMinutes: 0,
+            message:
+              existing.status === 'REJECTED'
+                ? 'សំណើត្រូវបានបោះបង់រួចរាល់ហើយ / Request has already been cancelled'
+                : 'បានកត់ត្រាការចាកចេញរួចរាល់ហើយ / Visitor has already checked out',
+          };
+        }
+      }
       throw new Error('មិនមានវត្តមានសកម្មដែលត្រូវចាកចេញទេ / No active check-in found');
     }
 

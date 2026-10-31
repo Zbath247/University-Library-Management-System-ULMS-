@@ -118,14 +118,18 @@ export class ScannerService {
         if (fs.existsSync(img.filePath)) {
           const buffer = fs.readFileSync(img.filePath);
           try {
-            const ocrResult = await ocrAdapter.extractText(buffer, img.mimeType, ['eng', 'khm']);
+            const ocrPromise = ocrAdapter.extractText(buffer, img.mimeType, ['eng', 'khm']);
+            const timeoutPromise = new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('OCR_TIMEOUT: Processing exceeded 12s limit')), 12000)
+            );
+            const ocrResult = await Promise.race([ocrPromise, timeoutPromise]);
             combinedOcrText += `\n--- PAGE: ${img.imageType} ---\n` + ocrResult.rawText;
             if (ocrResult.confidence !== null) {
               avgConfidence += ocrResult.confidence;
               count++;
             }
           } catch (ocrErr) {
-            console.warn(`OCR extraction failed on ${img.originalFileName}, using resilient fallback:`, ocrErr);
+            console.warn(`OCR extraction failed/timed out on ${img.originalFileName}, using resilient fallback:`, ocrErr);
             const fallback = new MockOcrAdapter();
             const fallbackResult = await fallback.extractText(buffer, img.mimeType, ['eng']);
             combinedOcrText += `\n--- PAGE: ${img.imageType} ---\n` + fallbackResult.rawText;
