@@ -139,17 +139,17 @@ export class AttendanceService {
   }
 
   /**
-   * Check out of the library.
+   * Check out of the library or cancel pending request.
    */
   static async checkOut(params: CheckOutDTO) {
-    let whereClause: any = { status: 'CHECKED_IN' };
+    let whereClause: any = { status: { in: ['CHECKED_IN', 'PENDING_APPROVAL'] } };
 
     if (params.attendanceId) {
-      whereClause = { id: params.attendanceId, status: 'CHECKED_IN' };
+      whereClause = { id: params.attendanceId, status: { in: ['CHECKED_IN', 'PENDING_APPROVAL'] } };
     } else if (params.memberCode) {
       whereClause = {
         memberCode: params.memberCode.trim().toUpperCase(),
-        status: 'CHECKED_IN',
+        status: { in: ['CHECKED_IN', 'PENDING_APPROVAL'] },
       };
     } else {
       throw new Error('Attendance ID or Member Code is required for checkout');
@@ -169,10 +169,13 @@ export class AttendanceService {
       (now.getTime() - new Date(record.checkInTime).getTime()) / 60000
     );
 
+    const isPending = record.status === 'PENDING_APPROVAL';
+    const newStatus = isPending ? 'REJECTED' : 'CHECKED_OUT';
+
     const updated = await prisma.attendance.update({
       where: { id: record.id },
       data: {
-        status: 'CHECKED_OUT',
+        status: newStatus,
         checkOutTime: now,
       },
     });
@@ -180,7 +183,9 @@ export class AttendanceService {
     return {
       record: updated,
       durationMinutes,
-      message: `បានកត់ត្រាការចាកចេញដោយជោគជ័យ (ស្នាក់នៅក្នុងបណ្ណាល័យ: ${durationMinutes} នាទី) / Checked out successfully`,
+      message: isPending
+        ? 'បានបោះបង់សំណើដោយជោគជ័យ / Request cancelled successfully'
+        : `បានកត់ត្រាការចាកចេញដោយជោគជ័យ (ស្នាក់នៅក្នុងបណ្ណាល័យ: ${durationMinutes} នាទី) / Checked out successfully`,
     };
   }
 
