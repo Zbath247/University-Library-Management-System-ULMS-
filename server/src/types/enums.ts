@@ -1,0 +1,67 @@
+export enum Role {
+  ADMIN = 'ADMIN',
+  USER = 'USER',
+  LIBRARIAN = 'LIBRARIAN',
+  STUDENT = 'STUDENT',
+}
+
+export enum MemberType {
+  STUDENT = 'STUDENT',
+  FACULTY = 'FACULTY',
+  STAFF = 'STAFF',
+}
+
+export enum MemberStatus {
+  ACTIVE = 'ACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  EXPIRED = 'EXPIRED',
+}
+
+export enum CopyStatus {
+  AVAILABLE = 'AVAILABLE',
+  BORROWED = 'BORROWED',
+  RESERVED = 'RESERVED',
+  MAINTENANCE = 'MAINTENANCE',
+  LOST = 'LOST',
+}
+
+export enum CopyCondition {
+  NEW = 'NEW',
+  GOOD = 'GOOD',
+  FAIR = 'FAIR',
+  POOR = 'POOR',
+}
+
+export enum LoanStatus {
+  ACTIVE = 'ACTIVE',
+  RETURNED = 'RETURNED',
+  OVERDUE = 'OVERDUE',
+  EXTENDED = 'EXTENDED',
+  LOST = 'LOST',
+}
+
+export enum ScanStatus {
+  DRAFT = 'DRAFT',
+  UPLOADED = 'UPLOADED',
+  PROCESSING = 'PROCESSING',
+  NEEDS_REVIEW = 'NEEDS_REVIEW',
+  APPROVED = 'APPROVED',
+  SAVED = 'SAVED',
+  FAILED = 'FAILED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum ScanImageType {
+  COVER = 'COVER',
+  TITLE_PAGE = 'TITLE_PAGE',
+  COPYRIGHT_PAGE = 'COPYRIGHT_PAGE',
+}
+
+export enum CandidateSource {
+  OCR_RAW = 'OCR_RAW',
+  AI_NORMALIZED = 'AI_NORMALIZED',
+  ISBN_GOOGLE_BOOKS = 'ISBN_GOOGLE_BOOKS',
+  ISBN_OPEN_LIBRARY = 'ISBN_OPEN_LIBRARY',
+  LIBRARIAN_EDIT = 'LIBRARIAN_EDIT',
+}
+

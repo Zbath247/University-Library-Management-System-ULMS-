@@ -1,0 +1,317 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  LIBRARIAN
+  STUDENT
+}
+
+enum MemberType {
+  STUDENT
+  FACULTY
+  STAFF
+}
+
+enum MemberStatus {
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+}
+
+enum CopyStatus {
+  AVAILABLE
+  BORROWED
+  RESERVED
+  MAINTENANCE
+  LOST
+}
+
+enum CopyCondition {
+  NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum LoanStatus {
+  ACTIVE
+  RETURNED
+  OVERDUE
+  EXTENDED
+  LOST
+}
+
+enum ScanStatus {
+  DRAFT
+  UPLOADED
+  PROCESSING
+  NEEDS_REVIEW
+  APPROVED
+  SAVED
+  FAILED
+  CANCELLED
+}
+
+enum ScanImageType {
+  COVER
+  TITLE_PAGE
+  COPYRIGHT_PAGE
+}
+
+enum CandidateSource {
+  OCR_RAW
+  AI_NORMALIZED
+  ISBN_GOOGLE_BOOKS
+  ISBN_OPEN_LIBRARY
+  LIBRARIAN_EDIT
+}
+
+model User {
+  id           String        @id @default(uuid())
+  username     String        @unique
+  email        String        @unique
+  passwordHash String
+  fullName     String
+  role         Role          @default(STUDENT)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  loansIssued    Loan[]       @relation("IssuedLoans")
+  loansReceived  Loan[]       @relation("ReceivedLoans")
+  scanSessions   BookScanSession[]
+  auditLogs      AuditLog[]
+  importBatches  ImportBatch[]
+
+  @@map("users")
+}
+
+model Member {
+  id              String        @id @default(uuid())
+  memberCode      String        @unique
+  fullNameKhmer   String
+  fullNameEnglish String
+  email           String        @unique
+  phoneNumber     String?
+  department      String
+  memberType      MemberType    @default(STUDENT)
+  maxActiveLoans  Int           @default(3)
+  status          MemberStatus  @default(ACTIVE)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  loans Loan[]
+
+  @@index([memberCode])
+  @@index([department])
+  @@map("members")
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  nameKhmer   String
+  nameEnglish String
+  code        String     @unique
+  description String?
+  parentId    String?
+  parent      Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children    Category[] @relation("SubCategories")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  books Book[]
+
+  @@map("categories")
+}
+
+model Book {
+  id                 String     @id @default(uuid())
+  titleKhmer         String
+  titleEnglish       String
+  subtitle           String?
+  isbn10             String?
+  isbn13             String?
+  authors            String[]
+  publisher          String?
+  publicationYear    Int?
+  edition            String?
+  language           String     @default("km")
+  categoryId         String
+  category           Category   @relation(fields: [categoryId], references: [id])
+  descriptionKhmer   String?
+  descriptionEnglish String?
+  coverImageUrl      String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  copies             BookCopy[]
+  duplicateInScans   BookScanSession[] @relation("DuplicateBooks")
+  savedFromScans     BookScanSession[] @relation("SavedBooks")
+
+  @@index([isbn13])
+  @@index([isbn10])
+  @@index([titleEnglish])
+  @@index([titleKhmer])
+  @@map("books")
+}
+
+model BookCopy {
+  id              String        @id @default(uuid())
+  bookId          String
+  book            Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  accessionNumber String        @unique
+  barcode         String        @unique
+  callNumber      String?
+  shelfLocation   String
+  status          CopyStatus    @default(AVAILABLE)
+  condition       CopyCondition @default(GOOD)
+  acquisitionDate DateTime      @default(now())
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  loans           Loan[]
+  savedFromScans  BookScanSession[] @relation("SavedCopies")
+
+  @@index([accessionNumber])
+  @@index([barcode])
+  @@index([status])
+  @@map("book_copies")
+}
+
+model Loan {
+  id               String      @id @default(uuid())
+  bookCopyId       String
+  bookCopy         BookCopy    @relation(fields: [bookCopyId], references: [id])
+  memberId         String
+  member           Member      @relation(fields: [memberId], references: [id])
+  issuedByUserId   String
+  issuedByUser     User        @relation("IssuedLoans", fields: [issuedByUserId], references: [id])
+  returnedToUserId String?
+  returnedToUser   User?       @relation("ReceivedLoans", fields: [returnedToUserId], references: [id])
+  issueDate        DateTime    @default(now())
+  dueDate          DateTime
+  returnDate       DateTime?
+  status           LoanStatus  @default(ACTIVE)
+  renewalCount     Int         @default(0)
+  fineAmount       Decimal     @default(0.00) @db.Decimal(10, 2)
+  notes            String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([bookCopyId])
+  @@index([memberId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("loans")
+}
+
+model BookScanSession {
+  id               String              @id @default(uuid())
+  userId           String
+  user             User                @relation(fields: [userId], references: [id])
+  status           ScanStatus          @default(DRAFT)
+  duplicateBookId  String?
+  duplicateBook    Book?               @relation("DuplicateBooks", fields: [duplicateBookId], references: [id])
+  savedBookId      String?
+  savedBook        Book?               @relation("SavedBooks", fields: [savedBookId], references: [id])
+  savedBookCopyId  String?
+  savedBookCopy    BookCopy?           @relation("SavedCopies", fields: [savedBookCopyId], references: [id])
+  failureReason    String?
+  startedAt        DateTime            @default(now())
+  completedAt      DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  images           BookScanImage[]
+  candidates       MetadataCandidate[]
+
+  @@map("book_scan_sessions")
+}
+
+model BookScanImage {
+  id               String          @id @default(uuid())
+  scanSessionId    String
+  scanSession      BookScanSession @relation(fields: [scanSessionId], references: [id], onDelete: Cascade)
+  imageType        ScanImageType
+  filePath         String
+  originalFileName String
+  mimeType         String
+  fileSizeBytes    Int
+  imageWidth       Int?
+  imageHeight      Int?
+  rotationDegrees  Int             @default(0)
+  uploadedAt       DateTime        @default(now())
+
+  @@map("book_scan_images")
+}
+
+model MetadataCandidate {
+  id                String          @id @default(uuid())
+  scanSessionId     String
+  scanSession       BookScanSession @relation(fields: [scanSessionId], references: [id], onDelete: Cascade)
+  source            CandidateSource
+  fieldName         String
+  fieldValue        String          @db.Text
+  confidence        Decimal?        @db.Decimal(5, 2)
+  rawSourceSnippet  String?         @db.Text
+  isManuallyEdited  Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+
+  @@index([scanSessionId])
+  @@map("metadata_candidates")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  entity     String
+  entityId   String?
+  oldValues  Json?
+  newValues  Json?
+  ipAddress  String?
+  userAgent  String?
+  timestamp  DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+model ImportBatch {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  entityType       String
+  originalFilename String
+  totalRows        Int
+  successRows      Int
+  errorRows        Int
+  status           String
+  errorLog         Json?
+  createdAt        DateTime @default(now())
+
+  @@map("import_batches")
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+
