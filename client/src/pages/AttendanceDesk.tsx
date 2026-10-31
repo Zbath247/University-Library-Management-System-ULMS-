@@ -483,16 +483,16 @@ export const AttendanceDesk: React.FC = () => {
             setSelectedPurpose('BORROW_RETURN');
             setActiveTab('HISTORY');
           }}
-          className="col-span-2 sm:col-span-1 bg-white p-3.5 sm:p-4 rounded-2xl shadow-sm border border-slate-200/90 cursor-pointer hover:border-amber-400 hover:shadow-md transition group flex flex-col justify-between"
+          className="bg-white p-3.5 sm:p-4 rounded-2xl shadow-sm border border-slate-200/90 cursor-pointer hover:border-amber-400 hover:shadow-md transition group flex flex-col justify-between"
           title="ចុចដើម្បីមើលកំណត់ត្រាខ្ចី-សងទាំងអស់"
         >
-          <div className="text-xs text-amber-600 font-bold mb-1 flex items-center justify-between">
-            <span className="flex items-center gap-1">
+          <div className="text-xs text-amber-600 font-bold mb-1 flex items-center justify-between gap-1">
+            <span className="flex items-center gap-1 truncate">
               <RefreshCw className="w-3.5 h-3.5 shrink-0" />
               <span>ខ្ចី-សងសៀវភៅ</span>
             </span>
-            <span className="text-[10px] text-amber-700 bg-amber-50 group-hover:bg-amber-100 px-1.5 py-0.5 rounded font-bold transition">
-              មើលបញ្ជី →
+            <span className="text-[10px] text-amber-700 bg-amber-50 group-hover:bg-amber-100 px-1.5 py-0.5 rounded font-bold transition shrink-0">
+              បញ្ជី →
             </span>
           </div>
           <div>
