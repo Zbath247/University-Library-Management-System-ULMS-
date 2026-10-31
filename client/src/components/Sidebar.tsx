@@ -63,18 +63,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onOpenLoginMo
       <div className="p-4 sm:p-5 border-b border-duc-gold/25 bg-gradient-to-b from-duc-navy/60 to-transparent">
         <div className="flex items-center justify-between">
           <Link to="/" onClick={onClose} className="flex items-center gap-2.5 sm:gap-3 group min-w-0 flex-1">
-            <div className="p-1 rounded-xl bg-white/10 group-hover:bg-white/20 transition-all duration-300 group-hover:scale-105 group-hover:rotate-2 shadow-sm shrink-0">
+            <div className="p-1 rounded-xl bg-white/10 group-hover:bg-white/20 transition-all duration-300 group-hover:scale-105 shadow-sm shrink-0">
               <img
                 src="/logo.png"
                 alt="DUC Logo"
-                className="w-10 h-10 xl:w-11 xl:h-11 object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105"
+                className="w-11 h-11 xl:w-12 xl:h-12 object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105"
               />
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="font-extrabold text-[13px] xl:text-[14px] leading-snug tracking-normal text-white group-hover:text-duc-gold transition-colors duration-200 whitespace-nowrap">
+              <h1 className="font-black text-[14px] xl:text-[15px] leading-snug tracking-normal text-white group-hover:text-duc-gold transition-colors duration-200 whitespace-nowrap">
                 {t.institutionName}
               </h1>
-              <p className="text-[10px] xl:text-[11px] text-duc-gold font-medium leading-tight truncate mt-0.5">
+              <p className="text-[11px] xl:text-xs text-duc-gold font-bold leading-tight truncate mt-0.5">
                 {t.systemTitle}
               </p>
             </div>
