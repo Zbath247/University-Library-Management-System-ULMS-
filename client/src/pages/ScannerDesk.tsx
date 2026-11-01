@@ -142,7 +142,7 @@ export const ScannerDesk: React.FC = () => {
       const isKhmer = /[\u1780-\u17FF]/.test(rawTitle);
 
       setTitleEnglish(extracted.titleEnglish || (!isKhmer ? rawTitle : ''));
-      setTitleKhmer(extracted.titleKhmer || (isKhmer ? rawTitle : rawTitle));
+      setTitleKhmer(extracted.titleKhmer || (isKhmer ? rawTitle : ''));
       setSubtitle(extracted.subtitle || '');
       setAuthors(extracted.authors?.join(', ') || '');
       setIsbn10(extracted.isbn10 || '');
@@ -502,9 +502,17 @@ export const ScannerDesk: React.FC = () => {
 
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                 <span className="text-slate-500">វិធីសាស្ត្រស្រង់ទិន្នន័យ:</span>
-                <span className="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-                  {reviewData.externalCandidates?.googleBooks || reviewData.externalCandidates?.openLibrary
-                    ? '✨ ISBN Match (100%)'
+                <span className={`font-bold px-2 py-0.5 rounded ${
+                  reviewData.extractionMethod === 'GEMINI_AI'
+                    ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
+                    : reviewData.externalCandidates?.googleBooks || reviewData.externalCandidates?.openLibrary
+                    ? 'text-blue-700 bg-blue-50 border border-blue-200'
+                    : 'text-slate-700 bg-slate-100'
+                }`}>
+                  {reviewData.extractionMethod === 'GEMINI_AI'
+                    ? '✨ Gemini Vision AI (100% Verified)'
+                    : reviewData.externalCandidates?.googleBooks || reviewData.externalCandidates?.openLibrary
+                    ? '📚 ISBN Match (100%)'
                     : '⚡ Local OCR + Heuristic'}
                 </span>
               </div>

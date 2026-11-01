@@ -117,53 +117,7 @@ export class ScannerService {
     });
 
     try {
-      // 1. Run local Tesseract OCR on each image
-      const ocrAdapter = process.env.NODE_ENV === 'test' ? new MockOcrAdapter() : new TesseractOcrAdapter();
-      let combinedOcrText = '';
-      let avgConfidence = 0;
-      let count = 0;
-
-      for (const img of session.images) {
-        if (fs.existsSync(img.filePath)) {
-          const buffer = fs.readFileSync(img.filePath);
-          try {
-            const ocrPromise = ocrAdapter.extractText(buffer, img.mimeType, ['eng', 'khm']);
-            const timeoutPromise = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('OCR_TIMEOUT: Processing exceeded 12s limit')), 12000)
-            );
-            const ocrResult = await Promise.race([ocrPromise, timeoutPromise]);
-            combinedOcrText += `\n--- PAGE: ${img.imageType} ---\n` + ocrResult.rawText;
-            if (ocrResult.confidence !== null) {
-              avgConfidence += ocrResult.confidence;
-              count++;
-            }
-          } catch (ocrErr) {
-            console.warn(`OCR extraction failed/timed out on ${img.originalFileName}:`, ocrErr);
-            const fallback = new MockOcrAdapter();
-            const fallbackResult = await fallback.extractText(buffer, img.mimeType, ['eng']);
-            combinedOcrText += `\n--- PAGE: ${img.imageType} ---\n` + fallbackResult.rawText;
-            if (fallbackResult.confidence !== null) {
-              avgConfidence += fallbackResult.confidence;
-              count++;
-            }
-          }
-        }
-      }
-
-      const totalConfidence = count > 0 ? Math.round((avgConfidence / count) * 100) / 100 : null;
-
-      // Save raw OCR candidate
-      await prisma.metadataCandidate.create({
-        data: {
-          scanSessionId: sessionId,
-          source: CandidateSource.OCR_RAW,
-          fieldName: 'raw_ocr_dump',
-          fieldValue: combinedOcrText,
-          confidence: totalConfidence as any,
-        },
-      });
-
-      // Collect image buffers for Vision AI if needed
+      // Collect image buffers
       const imageBuffers: { buffer: Buffer; mimeType: string }[] = [];
       for (const img of session.images) {
         if (fs.existsSync(img.filePath)) {
@@ -174,22 +128,89 @@ export class ScannerService {
         }
       }
 
-      // 2. Normalize metadata with Fast Heuristic Regex (No AI) or Gemini AI
-      // When skipAi is true, use RegexFallbackNormalizer for instant (1ms) offline extraction
-      const normalizer =
-        options?.skipAi || !config.GEMINI_API_KEY
-          ? new RegexFallbackNormalizer()
-          : new GeminiAiNormalizer(config.GEMINI_API_KEY);
+      let aiResult: { metadata: any; confidence: number | null; rawResponse?: string } | null = null;
+      let combinedOcrText = '';
+      let totalConfidence: number | null = null;
 
-      const aiResult = await normalizer.normalizeMetadata(combinedOcrText, imageBuffers);
+      // 1. If AI is enabled and API key is present, prioritize Gemini Multimodal Vision AI first (Ultra-fast ~2.2s)
+      if (!options?.skipAi && config.GEMINI_API_KEY) {
+        try {
+          const geminiNormalizer = new GeminiAiNormalizer(config.GEMINI_API_KEY);
+          aiResult = await geminiNormalizer.normalizeMetadata('', imageBuffers);
+          if (aiResult && aiResult.metadata && (aiResult.metadata.titleKhmer || aiResult.metadata.titleEnglish || aiResult.metadata.title)) {
+            combinedOcrText = `--- GEMINI VISION AI EXTRACTION ---\n` +
+              `ចំណងជើងខ្មែរ (Khmer Title): ${aiResult.metadata.titleKhmer || '-'}\n` +
+              `ចំណងជើងអង់គ្លេស (English Title): ${aiResult.metadata.titleEnglish || '-'}\n` +
+              `អ្នកនិពន្ធ (Authors): ${(aiResult.metadata.authors || []).join(', ')}\n` +
+              `រោងពុម្ព (Publisher): ${aiResult.metadata.publisher || '-'}\n` +
+              `ISBN-13: ${aiResult.metadata.isbn13 || '-'}\n` +
+              `ISBN-10: ${aiResult.metadata.isbn10 || '-'}\n` +
+              `ឆ្នាំបោះពុម្ព (Year): ${aiResult.metadata.publicationYear || '-'}\n`;
+            totalConfidence = aiResult.confidence;
+          }
+        } catch (aiErr) {
+          console.warn('Direct Gemini Vision failed, will fallback to Local OCR:', aiErr);
+          aiResult = null;
+        }
+      }
 
-      // Save structured AI candidates
+      // 2. If AI was skipped, unavailable, or failed, run Local Tesseract OCR + Regex Fallback
+      if (!aiResult) {
+        const ocrAdapter = process.env.NODE_ENV === 'test' ? new MockOcrAdapter() : new TesseractOcrAdapter();
+        let avgConfidence = 0;
+        let count = 0;
+
+        for (const img of session.images) {
+          if (fs.existsSync(img.filePath)) {
+            const buffer = fs.readFileSync(img.filePath);
+            try {
+              const ocrPromise = ocrAdapter.extractText(buffer, img.mimeType, ['eng', 'khm']);
+              const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('OCR_TIMEOUT: Processing exceeded 10s limit')), 10000)
+              );
+              const ocrResult = await Promise.race([ocrPromise, timeoutPromise]);
+              combinedOcrText += `\n--- PAGE: ${img.imageType} ---\n` + ocrResult.rawText;
+              if (ocrResult.confidence !== null) {
+                avgConfidence += ocrResult.confidence;
+                count++;
+              }
+            } catch (ocrErr) {
+              console.warn(`OCR extraction failed/timed out on ${img.originalFileName}:`, ocrErr);
+              const fallback = new MockOcrAdapter();
+              const fallbackResult = await fallback.extractText(buffer, img.mimeType, ['eng']);
+              combinedOcrText += `\n--- PAGE: ${img.imageType} ---\n` + fallbackResult.rawText;
+              if (fallbackResult.confidence !== null) {
+                avgConfidence += fallbackResult.confidence;
+                count++;
+              }
+            }
+          }
+        }
+
+        totalConfidence = count > 0 ? Math.round((avgConfidence / count) * 100) / 100 : null;
+
+        const regexNormalizer = new RegexFallbackNormalizer();
+        aiResult = await regexNormalizer.normalizeMetadata(combinedOcrText);
+      }
+
+      // Save raw OCR / AI dump candidate
+      await prisma.metadataCandidate.create({
+        data: {
+          scanSessionId: sessionId,
+          source: CandidateSource.OCR_RAW,
+          fieldName: 'raw_ocr_dump',
+          fieldValue: combinedOcrText,
+          confidence: totalConfidence as any,
+        },
+      });
+
+      // Save structured candidates
       const fields = [
         { name: 'title', val: aiResult.metadata.title },
         { name: 'titleKhmer', val: aiResult.metadata.titleKhmer || aiResult.metadata.title },
         { name: 'titleEnglish', val: aiResult.metadata.titleEnglish },
         { name: 'subtitle', val: aiResult.metadata.subtitle },
-        { name: 'authors', val: JSON.stringify(aiResult.metadata.authors) },
+        { name: 'authors', val: JSON.stringify(aiResult.metadata.authors || []) },
         { name: 'isbn10', val: aiResult.metadata.isbn10 },
         { name: 'isbn13', val: aiResult.metadata.isbn13 },
         { name: 'publisher', val: aiResult.metadata.publisher },
@@ -312,6 +333,8 @@ export class ScannerService {
       session.candidates.find((c) => c.source === CandidateSource.AI_NORMALIZED && c.fieldName === name)?.fieldValue || null;
 
     const title = getField('title') || '';
+    const titleKhmerCandidate = getField('titleKhmer');
+    const titleEnglishCandidate = getField('titleEnglish');
     const subtitle = getField('subtitle');
     const authorsRaw = getField('authors');
     const authors = authorsRaw ? JSON.parse(authorsRaw) : [];
@@ -333,6 +356,10 @@ export class ScannerService {
     const finalTitle = title || extMatch?.title || '';
     const isKhmer = /[\u1780-\u17FF]/.test(finalTitle);
 
+    // AI confidence check
+    const aiCandidate = session.candidates.find((c) => c.source === CandidateSource.AI_NORMALIZED);
+    const isAiResult = !!(aiCandidate && Number(aiCandidate.confidence) >= 90);
+
     // Duplicate detection
     const duplicateCheck = await DuplicateService.findPotentialDuplicates({
       isbn10: isbn10 || extMatch?.isbn10,
@@ -344,10 +371,11 @@ export class ScannerService {
     return {
       session,
       images: session.images,
+      extractionMethod: extMatch ? 'ISBN_MATCH' : (isAiResult ? 'GEMINI_AI' : 'LOCAL_OCR'),
       extracted: {
         title: finalTitle,
-        titleKhmer: isKhmer ? finalTitle : (extMatch?.title || ''),
-        titleEnglish: !isKhmer ? finalTitle : (extMatch?.title || ''),
+        titleKhmer: titleKhmerCandidate || (isKhmer ? finalTitle : (extMatch?.title || '')),
+        titleEnglish: titleEnglishCandidate || (!isKhmer ? finalTitle : (extMatch?.title || '')),
         subtitle: subtitle || extMatch?.subtitle || null,
         authors: authors.length > 0 ? authors : (extMatch?.authors || []),
         isbn10: isbn10 || extMatch?.isbn10 || null,

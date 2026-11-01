@@ -83,6 +83,8 @@ export class RegexFallbackNormalizer implements IAiNormalizer {
 
     const metadata: ExtractedBookMetadata = {
       title,
+      titleKhmer: khmerLine || (/[\\u1780-\\u17FF]/.test(title) ? title : null),
+      titleEnglish: englishLine || (/[a-zA-Z]/.test(title) ? title : null),
       subtitle,
       authors: authors.length > 0 ? authors : [],
       isbn10,
@@ -120,17 +122,26 @@ export class GeminiAiNormalizer implements IAiNormalizer {
       return fallback.normalizeMetadata(ocrText);
     }
 
-    const systemInstruction = `You are a professional library cataloging AI for Digital University of Cambodia.
-Extract accurate bibliographic book metadata directly from physical book images or text.
-Analyze the cover and publication page carefully:
-1. Title in Khmer and English (e.g. "រចនាគេហទំព័រ ជាមួយ ASP.net" / "ASP.net with Visual Studio 2005")
-2. Authors (remove academic titles like អនុបណ្ឌិត, MSc, Dr.)
-3. ISBN-10 and ISBN-13
-4. Publisher (e.g. គ្រឹះស្ថានបោះពុម្ពអង្គរ / Editions Angkor)
-5. Publication Year
+    const systemInstruction = `You are an expert library cataloging AI for Digital University of Cambodia (DUC).
+Extract complete and accurate bibliographic book metadata from the provided book cover and publication pages.
+Instructions:
+1. title: The primary title of the book
+2. titleKhmer: The Khmer title (e.g. "រចនាគេហទំព័រ ជាមួយ ASP.net 1")
+3. titleEnglish: The English title (e.g. "ASP.net with Visual Studio 2005")
+4. subtitle: Subtitle if any, or null
+5. authors: Array of author names. CRITICAL: Remove all academic honorifics/prefixes like MSc, Dr, អនុបណ្ឌិត, បណ្ឌិត. If authors are written in both Khmer and English, include all clean names (e.g. ["Chi Kim Y", "Te Samnang", "ជី គីមអ៊ី", "តែ សំណាង"]).
+6. publisher: Publisher name (e.g. "Editions Angkor" or "គ្រឹះស្ថានបោះពុម្ពអង្គរ")
+7. publicationYear: Integer publication year (e.g. 2005) or null
+8. isbn13: 13-digit standard ISBN barcode or printed sequence (digits only, e.g. "9789995020255") or null
+9. isbn10: 10-digit ISBN if found or null
+10. language: "km" if primarily Khmer, else "en"
+11. edition: Edition if mentioned or null
+
 Respond ONLY with a valid JSON object matching this schema:
 {
   "title": string,
+  "titleKhmer": string or null,
+  "titleEnglish": string or null,
   "subtitle": string or null,
   "authors": string[],
   "isbn10": string or null,
@@ -158,43 +169,52 @@ Respond ONLY with a valid JSON object matching this schema:
       parts.push({ text: `Book Scanned Text:\n${ocrText.slice(0, 4000)}` });
     }
 
-    try {
-      const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${this.apiKey}`,
-        {
-          contents: [{ parts }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.1,
+    // Try fastest, modern models first with automatic fallback
+    const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-flash-latest'];
+    let lastError: any = null;
+
+    for (const model of modelsToTry) {
+      try {
+        const response = await axios.post(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.apiKey}`,
+          {
+            contents: [{ parts }],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.1,
+            },
           },
-        },
-        { timeout: 12000 }
-      );
+          { timeout: 20000 }
+        );
 
-      const rawContent = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!rawContent) {
-        throw new Error('Empty response from AI provider');
-      }
+        const rawContent = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawContent) {
+          throw new Error(`Empty response from model ${model}`);
+        }
 
-      const parsedJson = JSON.parse(rawContent);
-      if (!parsedJson.title) {
-        parsedJson.title = parsedJson.titleKhmer || parsedJson.titleEnglish || 'Unknown Title';
-      }
-      if (!Array.isArray(parsedJson.authors)) {
-        parsedJson.authors = parsedJson.authors ? [parsedJson.authors] : [];
-      }
-      const validated = extractedBookMetadataSchema.parse(parsedJson);
+        const parsedJson = JSON.parse(rawContent);
+        if (!parsedJson.title) {
+          parsedJson.title = parsedJson.titleKhmer || parsedJson.titleEnglish || 'Unknown Title';
+        }
+        if (!Array.isArray(parsedJson.authors)) {
+          parsedJson.authors = parsedJson.authors ? [parsedJson.authors] : [];
+        }
+        const validated = extractedBookMetadataSchema.parse(parsedJson);
 
-      return {
-        metadata: validated,
-        confidence: 95.0,
-        rawResponse: rawContent,
-      };
-    } catch (err) {
-      console.warn('Gemini AI normalizer error, falling back to regex parser:', err instanceof Error ? err.message : err);
-      const fallback = new RegexFallbackNormalizer();
-      return fallback.normalizeMetadata(ocrText);
+        return {
+          metadata: validated,
+          confidence: 98.0,
+          rawResponse: rawContent,
+        };
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`Gemini model ${model} failed, trying next:`, err?.response?.data?.error?.message || err?.message || err);
+      }
     }
+
+    console.warn('All Gemini AI models failed or timed out, falling back to regex parser:', lastError?.message || lastError);
+    const fallback = new RegexFallbackNormalizer();
+    return fallback.normalizeMetadata(ocrText);
   }
 }
 
