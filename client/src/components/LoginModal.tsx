@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { X, Lock, User, ShieldCheck } from 'lucide-react';
+import { X, Lock, User } from 'lucide-react';
 
 export const LoginModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
   isOpen,
@@ -29,11 +29,6 @@ export const LoginModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     } else {
       setError('ឈ្មោះគណនី ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ / Invalid username or password');
     }
-  };
-
-  const handleQuickLogin = (u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
   };
 
   return (
@@ -105,31 +100,6 @@ export const LoginModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
           >
             {loading ? 'កំពុងផ្ទៀងផ្ទាត់...' : t.login}
           </button>
-
-          {/* Quick Demo Accounts */}
-          <div className="pt-3 border-t border-slate-100">
-            <span className="text-[11px] font-semibold text-slate-400 block mb-2 uppercase tracking-wider">
-              គណនីសាកល្បង / Demo Credentials:
-            </span>
-            <div className="grid grid-cols-2 gap-2.5 text-xs">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admin', 'admin123')}
-                className="py-2.5 px-3 bg-duc-blue/10 hover:bg-duc-blue/20 text-duc-blue rounded-xl font-bold text-center transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] border border-duc-blue/20 flex items-center justify-center gap-1.5"
-              >
-                <ShieldCheck className="w-4 h-4 text-duc-blue shrink-0" />
-                <span>Admin (អ្នកគ្រប់គ្រង)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('user', 'user123')}
-                className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-center transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] border border-slate-200 flex items-center justify-center gap-1.5"
-              >
-                <User className="w-4 h-4 text-slate-500 shrink-0" />
-                <span>User (អ្នកប្រើប្រាស់)</span>
-              </button>
-            </div>
-          </div>
         </form>
       </div>
     </div>
