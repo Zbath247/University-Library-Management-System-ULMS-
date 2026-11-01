@@ -160,7 +160,7 @@ Respond ONLY with a valid JSON object matching this schema:
 
     try {
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${this.apiKey}`,
         {
           contents: [{ parts }],
           generationConfig: {
@@ -177,6 +177,12 @@ Respond ONLY with a valid JSON object matching this schema:
       }
 
       const parsedJson = JSON.parse(rawContent);
+      if (!parsedJson.title) {
+        parsedJson.title = parsedJson.titleKhmer || parsedJson.titleEnglish || 'Unknown Title';
+      }
+      if (!Array.isArray(parsedJson.authors)) {
+        parsedJson.authors = parsedJson.authors ? [parsedJson.authors] : [];
+      }
       const validated = extractedBookMetadataSchema.parse(parsedJson);
 
       return {

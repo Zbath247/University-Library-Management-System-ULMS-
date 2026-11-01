@@ -186,6 +186,8 @@ export class ScannerService {
       // Save structured AI candidates
       const fields = [
         { name: 'title', val: aiResult.metadata.title },
+        { name: 'titleKhmer', val: aiResult.metadata.titleKhmer || aiResult.metadata.title },
+        { name: 'titleEnglish', val: aiResult.metadata.titleEnglish },
         { name: 'subtitle', val: aiResult.metadata.subtitle },
         { name: 'authors', val: JSON.stringify(aiResult.metadata.authors) },
         { name: 'isbn10', val: aiResult.metadata.isbn10 },

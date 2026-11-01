@@ -16,9 +16,11 @@ export interface IOcrAdapter {
 }
 
 export const extractedBookMetadataSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
+  title: z.string().default(''),
+  titleKhmer: z.string().optional().nullable(),
+  titleEnglish: z.string().optional().nullable(),
   subtitle: z.string().optional().nullable(),
-  authors: z.array(z.string()).min(1, 'At least one author is required'),
+  authors: z.array(z.string()).default([]),
   isbn10: z.string().optional().nullable(),
   isbn13: z.string().optional().nullable(),
   publisher: z.string().optional().nullable(),

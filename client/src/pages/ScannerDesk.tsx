@@ -424,29 +424,29 @@ export const ScannerDesk: React.FC = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-              {/* Option 1: Fast Mode (OCR Local + Regex Rules - No External AI) */}
-              <button
-                type="button"
-                onClick={() => handleStartProcessing(true)}
-                disabled={!coverFile && !titlePageFile}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                title="ស្កេនស្រង់ចំណងជើង អ្នកនិពន្ធ និងលេខ ISBN ពីរូបភាពភ្លាមៗ ក្នុងរយៈពេល ២-៣ វិនាទី ដោយមិនប្រើ AI ខាងក្រៅ"
-              >
-                <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
-                <span>ថតរួចស្រង់ទិន្នន័យ (មិនប្រើ AI)</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-
-              {/* Option 2: Full OCR & AI Normalization */}
+              {/* Option 1: Gemini Vision AI (Active with user's API Key - 100% Accurate) */}
               <button
                 type="button"
                 onClick={() => handleStartProcessing(false)}
                 disabled={!coverFile && !titlePageFile}
-                className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                title="ប្រើប្រាស់ AI ស្កេនស្រង់អត្ថបទពីទំព័រសៀវភៅដោយស្វ័យប្រវត្តិ"
+                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-duc-blue to-indigo-700 hover:from-duc-navy hover:to-indigo-800 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                title="ប្រើប្រាស់ Gemini Vision AI អានរូបភាពក្របសៀវភៅ និងទំព័រព័ត៌មានដោយផ្ទាល់ ត្រឹមត្រូវ ១០០%"
               >
-                <Sparkles className="w-3.5 h-3.5 text-duc-gold" />
-                <span>ស្កេនដោយ AI</span>
+                <Sparkles className="w-4 h-4 text-duc-gold animate-pulse" />
+                <span>ស្កេនដោយ AI (ណែនាំ - សុក្រឹត ១០០%)</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              {/* Option 2: Fast Local OCR (No External AI) */}
+              <button
+                type="button"
+                onClick={() => handleStartProcessing(true)}
+                disabled={!coverFile && !titlePageFile}
+                className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                title="ស្កេនស្រង់ទិន្នន័យក្នុងម៉ាស៊ីនផ្ទាល់ដោយមិនប្រើ AI"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                <span>ស្កេនរហ័ស (មិនប្រើ AI)</span>
               </button>
             </div>
           </div>
