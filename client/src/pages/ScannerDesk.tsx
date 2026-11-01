@@ -63,6 +63,7 @@ export const ScannerDesk: React.FC = () => {
   const [accessionNumber, setAccessionNumber] = useState('');
   const [barcode, setBarcode] = useState('');
   const [shelfLocation, setShelfLocation] = useState('ជាន់ទី ១, ធ្នើ A-01');
+  const [copyCount, setCopyCount] = useState<number>(1);
 
   // Mode for handling duplicates
   const [saveMode, setSaveMode] = useState<'NEW_TITLE' | 'ADD_COPY_TO_EXISTING'>('NEW_TITLE');
@@ -276,6 +277,7 @@ export const ScannerDesk: React.FC = () => {
           barcode: barcode.trim(),
           shelfLocation: shelfLocation.trim(),
           condition: 'NEW',
+          copyCount: Math.max(1, Math.min(100, Number(copyCount) || 1)),
         },
       };
 
@@ -296,6 +298,7 @@ export const ScannerDesk: React.FC = () => {
     setCoverImageUrl('');
     setReviewData(null);
     setSessionId(null);
+    setCopyCount(1);
     setStep('CAPTURE');
   };
 
@@ -847,7 +850,7 @@ export const ScannerDesk: React.FC = () => {
                   <span>ព័ត៌មានក្បាលសៀវភៅរូបវន្ត (Physical Copy Details)</span>
                 </h4>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       {t.accessionNumber} *
@@ -882,7 +885,62 @@ export const ScannerDesk: React.FC = () => {
                       className="w-full p-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-duc-blue focus:outline-none"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                      <span>ចំនួនក្បាល (Copies) *</span>
+                      <span className="text-[10px] text-duc-blue font-bold">1..50</span>
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setCopyCount(Math.max(1, copyCount - 1))}
+                        className="w-8 h-9 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-sm flex items-center justify-center border border-slate-300 active:scale-95 transition"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max="50"
+                        required
+                        value={copyCount}
+                        onChange={(e) => setCopyCount(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
+                        className="w-full p-2 text-sm font-bold text-center border border-slate-300 rounded-lg focus:ring-2 focus:ring-duc-blue focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCopyCount(Math.min(50, copyCount + 1))}
+                        className="w-8 h-9 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-sm flex items-center justify-center border border-slate-300 active:scale-95 transition"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Batch copies hint banner */}
+                {copyCount > 1 && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2.5 text-xs text-blue-900 animate-fadeIn">
+                    <Sparkles className="w-4 h-4 text-duc-gold shrink-0 mt-0.5 animate-pulse" />
+                    <div>
+                      <p className="font-bold">
+                        មុខងារបង្កើតក្បាលសៀវភៅស្វ័យប្រវត្តិ {copyCount} ក្បាល (Batch Copies):
+                      </p>
+                      <p className="text-[11px] text-blue-700 mt-0.5">
+                        ប្រព័ន្ធនឹងបង្កើតកូដបាកូដ និង Accession Number រៀងគ្នាពី{' '}
+                        <span className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-blue-200">
+                          {accessionNumber.replace(/-0*1$/, '')}-01
+                        </span>{' '}
+                        ដល់{' '}
+                        <span className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-blue-200">
+                          {accessionNumber.replace(/-0*1$/, '')}-{String(copyCount).padStart(2, '0')}
+                        </span>{' '}
+                        សម្រាប់បិទលើក្បាលសៀវភៅនីមួយៗដោយស្វ័យប្រវត្តិតែ ១ ឃ្លីកប៉ុណ្ណោះ!
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
@@ -920,7 +978,14 @@ export const ScannerDesk: React.FC = () => {
             បញ្ចូលសៀវភៅចូលបណ្ណាល័យជោគជ័យ!
           </h3>
           <p className="text-xs text-slate-500 leading-relaxed">
-            ទិន្នន័យកាតាឡុកសៀវភៅ និងក្បាលសៀវភៅរូបវន្ត (Accession No: <span className="font-mono font-bold text-slate-700">{accessionNumber}</span>) ត្រូវបានអនុម័ត និងរក្សាទុកចូលក្នុងប្រព័ន្ធផ្លូវការរួចរាល់។
+            ទិន្នន័យកាតាឡុកសៀវភៅ និងក្បាលសៀវភៅរូបវន្តចំនួន{' '}
+            <span className="font-bold text-emerald-600">{copyCount} ក្បាល</span>{' '}
+            {copyCount > 1 ? (
+              <>(Accession No: <span className="font-mono font-bold text-slate-700">{accessionNumber.replace(/-0*1$/, '')}-01</span> ដល់ <span className="font-mono font-bold text-slate-700">{accessionNumber.replace(/-0*1$/, '')}-{String(copyCount).padStart(2, '0')}</span>)</>
+            ) : (
+              <>(Accession No: <span className="font-mono font-bold text-slate-700">{accessionNumber}</span>)</>
+            )}{' '}
+            ត្រូវបានអនុម័ត និងរក្សាទុកចូលក្នុងប្រព័ន្ធផ្លូវការរួចរាល់។
           </p>
 
           <div className="flex justify-center gap-3 pt-4">

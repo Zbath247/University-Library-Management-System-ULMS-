@@ -29,6 +29,7 @@ const approveSchema = z.object({
     shelfLocation: z.string().min(1, 'Shelf location is required'),
     callNumber: z.string().optional().nullable(),
     condition: z.nativeEnum(CopyCondition).optional(),
+    copyCount: z.number().int().min(1).max(100).default(1),
   }),
 });
 

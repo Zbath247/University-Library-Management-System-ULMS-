@@ -421,6 +421,7 @@ export class ScannerService {
       shelfLocation: string;
       callNumber?: string | null;
       condition?: CopyCondition;
+      copyCount?: number;
     };
   }) {
     const { sessionId, mode, existingBookId, bookData, copyData } = params;
@@ -480,18 +481,30 @@ export class ScannerService {
         bookId = createdBook.id;
       }
 
-      // Create Physical Copy with unique Accession Number
-      const createdCopy = await tx.bookCopy.create({
-        data: {
-          bookId,
-          accessionNumber: copyData.accessionNumber,
-          barcode: copyData.barcode,
-          callNumber: copyData.callNumber || null,
-          shelfLocation: copyData.shelfLocation,
-          condition: copyData.condition || CopyCondition.NEW,
-          status: CopyStatus.AVAILABLE,
-        },
-      });
+      // Create Physical Copies (Supports Single Copy or Batch Copies 1..100)
+      const count = Math.max(1, Math.min(100, copyData.copyCount || 1));
+      const createdCopies: any[] = [];
+      const cleanBaseAccession = copyData.accessionNumber.replace(/-0*1$/, '');
+      const cleanBaseBarcode = copyData.barcode.replace(/-0*1$/, '');
+
+      for (let i = 0; i < count; i++) {
+        const copyNum = String(i + 1).padStart(2, '0');
+        const accNum = count === 1 ? copyData.accessionNumber : `${cleanBaseAccession}-${copyNum}`;
+        const barCode = count === 1 ? copyData.barcode : `${cleanBaseBarcode}-${copyNum}`;
+
+        const createdCopy = await tx.bookCopy.create({
+          data: {
+            bookId,
+            accessionNumber: accNum,
+            barcode: barCode,
+            callNumber: copyData.callNumber || null,
+            shelfLocation: copyData.shelfLocation,
+            condition: copyData.condition || CopyCondition.NEW,
+            status: CopyStatus.AVAILABLE,
+          },
+        });
+        createdCopies.push(createdCopy);
+      }
 
       // Update ScanSession to SAVED
       await tx.bookScanSession.update({
@@ -499,7 +512,7 @@ export class ScannerService {
         data: {
           status: ScanStatus.SAVED,
           savedBookId: bookId,
-          savedBookCopyId: createdCopy.id,
+          savedBookCopyId: createdCopies[0].id,
           completedAt: new Date(),
         },
       });
@@ -509,7 +522,13 @@ export class ScannerService {
         include: { category: true, copies: true },
       });
 
-      return { book: fullBook, copy: createdCopy, alreadySaved: false };
+      return {
+        book: fullBook,
+        copy: createdCopies[0],
+        copies: createdCopies,
+        createdCopiesCount: createdCopies.length,
+        alreadySaved: false,
+      };
     });
   }
 
