@@ -29,6 +29,7 @@ router.get('/:id', BookController.getById);
 router.post('/upload-cover', requireRole([Role.LIBRARIAN, Role.ADMIN]), uploadCover.single('image'), BookController.uploadCover);
 router.post('/', requireRole([Role.LIBRARIAN, Role.ADMIN]), BookController.create);
 router.put('/:id', requireRole([Role.LIBRARIAN, Role.ADMIN]), BookController.update);
+router.delete('/clear-all', requireRole([Role.ADMIN]), BookController.clearAll);
 router.delete('/:id', requireRole([Role.LIBRARIAN, Role.ADMIN]), BookController.delete);
 
 export default router;

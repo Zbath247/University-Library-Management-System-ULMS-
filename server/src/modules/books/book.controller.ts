@@ -158,6 +158,44 @@ export class BookController {
     }
   }
 
+  static async clearAll(req: Request, res: Response): Promise<void> {
+    const { confirmText } = req.body || {};
+    if (confirmText !== 'DELETE' && confirmText !== 'លុបទាំងអស់') {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'CONFIRMATION_REQUIRED',
+          message: 'សូមវាយពាក្យ DELETE ឬ លុបទាំងអស់ ដើម្បីបញ្ជាក់ការលុបសៀវភៅទាំងអស់!',
+        },
+      });
+      return;
+    }
+
+    try {
+      const result = await BookService.clearAllBooks();
+
+      await AuditService.log({
+        userId: req.user?.id,
+        action: 'CLEAR_ALL_BOOKS',
+        entity: 'BOOK',
+        entityId: 'ALL',
+        newValues: { deletedCount: result.deletedCount },
+        ipAddress: req.ip,
+      });
+
+      res.json({
+        success: true,
+        message: `បានលុបសៀវភៅទាំងអស់ចំនួន ${result.deletedCount} ក្បាលដោយជោគជ័យ`,
+        data: result,
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: { code: 'CLEAR_FAILED', message: err.message },
+      });
+    }
+  }
+
   static async uploadCover(req: Request, res: Response): Promise<void> {
     const file = req.file;
     if (!file) {

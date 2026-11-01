@@ -203,5 +203,29 @@ export class BookService {
       where: { id },
     });
   }
+
+  static async clearAllBooks() {
+    return prisma.$transaction(async (tx) => {
+      // 1. Clear any references from scan sessions
+      await tx.bookScanSession.updateMany({
+        data: {
+          duplicateBookId: null,
+          savedBookId: null,
+          savedBookCopyId: null,
+        },
+      });
+
+      // 2. Clear all loans
+      await tx.loan.deleteMany({});
+
+      // 3. Clear all physical copies
+      await tx.bookCopy.deleteMany({});
+
+      // 4. Delete all books
+      const result = await tx.book.deleteMany({});
+
+      return { deletedCount: result.count };
+    });
+  }
 }
 

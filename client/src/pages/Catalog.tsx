@@ -80,6 +80,11 @@ export const Catalog: React.FC = () => {
   const [addShelfLocation, setAddShelfLocation] = useState('ជាន់ទី ១, ធ្នើទូទៅ');
   const [addingBook, setAddingBook] = useState(false);
 
+  // Clear All Books Modal (Admin)
+  const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
+  const [clearAllConfirmText, setClearAllConfirmText] = useState('');
+  const [isClearingAll, setIsClearingAll] = useState(false);
+
   // Edit Book Modal (Admin)
   const [isEditBookModalOpen, setIsEditBookModalOpen] = useState(false);
   const [editTitleKhmer, setEditTitleKhmer] = useState('');
@@ -277,6 +282,28 @@ export const Catalog: React.FC = () => {
     }
   };
 
+  const handleClearAllBooks = async () => {
+    if (clearAllConfirmText !== 'DELETE' && clearAllConfirmText !== 'លុបទាំងអស់') {
+      alert('សូមវាយពាក្យ DELETE ឬ លុបទាំងអស់ ដើម្បីបញ្ជាក់!');
+      return;
+    }
+
+    setIsClearingAll(true);
+    try {
+      const res = await api.delete('/books/clear-all', {
+        data: { confirmText: clearAllConfirmText },
+      });
+      alert(res.data?.message || 'បានលុបសៀវភៅទាំងអស់ដោយជោគជ័យ!');
+      setIsClearAllModalOpen(false);
+      setClearAllConfirmText('');
+      fetchBooks();
+    } catch (err: any) {
+      alert('បរាជ័យក្នុងការលុបសៀវភៅទាំងអស់: ' + (err.response?.data?.error?.message || err.message));
+    } finally {
+      setIsClearingAll(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header and Search */}
@@ -291,16 +318,28 @@ export const Catalog: React.FC = () => {
             </p>
           </div>
 
-          {/* Admin Manual Book Entry Button */}
+          {/* Admin Action Buttons */}
           {isAdmin && (
-            <button
-              type="button"
-              onClick={() => setIsAddBookModalOpen(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-duc-blue hover:bg-duc-navy text-duc-gold font-bold text-xs sm:text-sm rounded-xl shadow-md transition active:scale-95 whitespace-nowrap"
-            >
-              <PlusCircle className="w-4 h-4 text-duc-gold" />
-              <span>+ បញ្ចូលសៀវភៅថ្មីដោយដៃ</span>
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setIsAddBookModalOpen(true)}
+                className="flex items-center justify-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 bg-duc-blue hover:bg-duc-navy text-duc-gold font-bold text-xs sm:text-sm rounded-xl shadow-md transition active:scale-95 whitespace-nowrap"
+              >
+                <PlusCircle className="w-4 h-4 text-duc-gold" />
+                <span>+ បញ្ចូលសៀវភៅថ្មីដោយដៃ</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsClearAllModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition active:scale-95 whitespace-nowrap cursor-pointer"
+                title="លុបសៀវភៅទាំងអស់ក្នុងបណ្ណាល័យ"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>លុបទាំងអស់</span>
+              </button>
+            </div>
           )}
         </div>
 
@@ -1046,6 +1085,93 @@ export const Catalog: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Clear All Books Modal (Admin Only) */}
+      {isAdmin && isClearAllModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-rose-200 overflow-hidden animate-scaleIn">
+            <div className="bg-rose-600 text-white p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <Trash2 className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="font-extrabold text-base">លុបសៀវភៅទាំងអស់ (Clear All Books)</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsClearAllModalOpen(false);
+                  setClearAllConfirmText('');
+                }}
+                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-900 text-xs space-y-1.5 leading-relaxed">
+                <p className="font-bold flex items-center gap-1.5 text-rose-700">
+                  <span>⚠️</span> ការព្រមានសំខាន់ (Irreversible Action):
+                </p>
+                <p>
+                  សកម្មភាពនេះនឹងធ្វើការជម្រះនិងលុបសៀវភៅទាំងអស់ រួមទាំងក្បាលសៀវភៅ (Physical Copies) ចេញពីបណ្ណាល័យជាអចិន្ត្រៃយ៍។
+                </p>
+                <p className="font-bold text-rose-800">
+                  ទិន្នន័យដែលលុបរួច នឹងមិនអាចត្រឡប់ក្រោយវិញបានទេ!
+                </p>
+              </div>
+
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-700 flex items-center justify-between">
+                <span>ចំនួនសៀវភៅសរុបក្នុងកាតាឡុកបច្ចុប្បន្ន:</span>
+                <span className="font-bold text-rose-600 bg-white px-2 py-0.5 rounded border border-rose-200">
+                  {books.length} ចំណងជើង
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  ដើម្បីបញ្ជាក់ សូមវាយពាក្យ <span className="font-mono text-rose-600 font-black bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">DELETE</span> ឬ <span className="font-mono text-rose-600 font-black bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">លុបទាំងអស់</span>:
+                </label>
+                <input
+                  type="text"
+                  value={clearAllConfirmText}
+                  onChange={(e) => setClearAllConfirmText(e.target.value)}
+                  placeholder="វាយពាក្យ DELETE ឬ លុបទាំងអស់"
+                  className="w-full p-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 font-medium"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
+                <button
+                  type="button"
+                  disabled={isClearingAll}
+                  onClick={() => {
+                    setIsClearAllModalOpen(false);
+                    setClearAllConfirmText('');
+                  }}
+                  className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+                >
+                  បោះបង់
+                </button>
+
+                <button
+                  type="button"
+                  disabled={
+                    (clearAllConfirmText !== 'DELETE' && clearAllConfirmText !== 'លុបទាំងអស់') ||
+                    isClearingAll
+                  }
+                  onClick={handleClearAllBooks}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{isClearingAll ? 'កំពុងលុបទាំងអស់...' : 'យល់ព្រមលុបទាំងអស់ជាអចិន្ត្រៃយ៍'}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
