@@ -153,3 +153,4 @@ export const CompactCategorySelect: React.FC<CompactCategorySelectProps> = ({
     </div>
   );
 };
+

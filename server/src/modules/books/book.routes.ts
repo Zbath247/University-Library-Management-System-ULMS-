@@ -27,6 +27,7 @@ router.get('/:id', BookController.getById);
 
 // Staff-only management (Librarian & Admin)
 router.post('/upload-cover', requireRole([Role.LIBRARIAN, Role.ADMIN]), uploadCover.single('image'), BookController.uploadCover);
+router.post('/batch-delete', requireRole([Role.ADMIN]), BookController.batchDelete);
 router.post('/', requireRole([Role.LIBRARIAN, Role.ADMIN]), BookController.create);
 router.put('/:id', requireRole([Role.LIBRARIAN, Role.ADMIN]), BookController.update);
 router.delete('/clear-all', requireRole([Role.ADMIN]), BookController.clearAll);

@@ -196,6 +196,41 @@ export class BookController {
     }
   }
 
+  static async batchDelete(req: Request, res: Response): Promise<void> {
+    const { bookIds } = req.body || {};
+    if (!Array.isArray(bookIds) || bookIds.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: { message: 'សូមជ្រើសរើសសៀវភៅដែលត្រូវលុបយ៉ាងតិច ១ ក្បាល / Select at least one book to delete' },
+      });
+      return;
+    }
+
+    try {
+      const result = await BookService.batchDeleteBooks(bookIds);
+
+      await AuditService.log({
+        userId: req.user?.id,
+        action: 'BATCH_DELETE_BOOKS',
+        entity: 'BOOK',
+        entityId: 'BATCH',
+        newValues: { deletedCount: result.deletedCount, bookIds },
+        ipAddress: req.ip,
+      });
+
+      res.json({
+        success: true,
+        message: `បានលុបសៀវភៅចំនួន ${result.deletedCount} ក្បាលដោយជោគជ័យ`,
+        data: result,
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: { code: 'BATCH_DELETE_FAILED', message: err.message },
+      });
+    }
+  }
+
   static async uploadCover(req: Request, res: Response): Promise<void> {
     const file = req.file;
     if (!file) {

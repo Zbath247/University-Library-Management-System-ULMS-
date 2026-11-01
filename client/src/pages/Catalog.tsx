@@ -86,6 +86,11 @@ export const Catalog: React.FC = () => {
   const [clearAllConfirmText, setClearAllConfirmText] = useState('');
   const [isClearingAll, setIsClearingAll] = useState(false);
 
+  // Multi-select & Batch Delete (Admin)
+  const [selectedBookIds, setSelectedBookIds] = useState<string[]>([]);
+  const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
+
   // Edit Book Modal (Admin)
   const [isEditBookModalOpen, setIsEditBookModalOpen] = useState(false);
   const [editTitleKhmer, setEditTitleKhmer] = useState('');
@@ -186,9 +191,42 @@ export const Catalog: React.FC = () => {
       if (selectedLanguage) params.language = selectedLanguage;
 
       const res = await api.get('/books', { params });
-      setBooks(res.data?.data || []);
+      const bList = res.data?.data || [];
+      setBooks(bList);
+      setSelectedBookIds((prev) => prev.filter((id) => bList.some((b: any) => b.id === id)));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleSelectAll = () => {
+    if (selectedBookIds.length === books.length) {
+      setSelectedBookIds([]);
+    } else {
+      setSelectedBookIds(books.map((b) => b.id));
+    }
+  };
+
+  const handleToggleSelectBook = (bookId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedBookIds((prev) =>
+      prev.includes(bookId) ? prev.filter((id) => id !== bookId) : [...prev, bookId]
+    );
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedBookIds.length === 0) return;
+    setIsBatchDeleting(true);
+    try {
+      const res = await api.post('/books/batch-delete', { bookIds: selectedBookIds });
+      alert(res.data?.message || `បានលុបសៀវភៅចំនួន ${selectedBookIds.length} ក្បាលដោយជោគជ័យ!`);
+      setSelectedBookIds([]);
+      setIsBatchDeleteModalOpen(false);
+      fetchBooks();
+    } catch (err: any) {
+      alert('បរាជ័យក្នុងការលុបសៀវភៅ: ' + (err.response?.data?.error?.message || err.message));
+    } finally {
+      setIsBatchDeleting(false);
     }
   };
 
@@ -331,6 +369,18 @@ export const Catalog: React.FC = () => {
                 <span>+ បញ្ចូលសៀវភៅថ្មីដោយដៃ</span>
               </button>
 
+              {selectedBookIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsBatchDeleteModalOpen(true)}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition active:scale-95 whitespace-nowrap cursor-pointer animate-pulse"
+                  title="លុបសៀវភៅដែលបានជ្រើសរើស"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>លុបដែលបានជ្រើស ({selectedBookIds.length})</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => setIsClearAllModalOpen(true)}
@@ -456,6 +506,56 @@ export const Catalog: React.FC = () => {
         </form>
       </div>
 
+      {/* Admin Multi-select Toolbar */}
+      {isAdmin && books.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:px-4 sm:py-3 flex items-center justify-between flex-wrap gap-2 text-xs sm:text-sm shadow-xs">
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer select-none font-bold text-slate-700 hover:text-duc-blue">
+              <input
+                type="checkbox"
+                checked={books.length > 0 && selectedBookIds.length === books.length}
+                onChange={handleToggleSelectAll}
+                className="w-4 h-4 rounded border-slate-300 text-duc-blue focus:ring-duc-blue cursor-pointer"
+              />
+              <span>
+                {selectedBookIds.length === books.length
+                  ? 'ដកការជ្រើសរើសទាំងអស់ (Deselect All)'
+                  : `ជ្រើសរើសទាំងអស់ (Select All - ${books.length} ក្បាល)`}
+              </span>
+            </label>
+            {selectedBookIds.length > 0 && (
+              <span className="bg-blue-50 text-duc-blue font-bold px-2.5 py-0.5 rounded-full text-xs border border-blue-200">
+                បានជ្រើស {selectedBookIds.length} / {books.length} ក្បាល
+              </span>
+            )}
+          </div>
+
+          {selectedBookIds.length > 0 ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedBookIds([])}
+                className="px-3 py-1.5 text-slate-500 hover:text-slate-800 text-xs font-semibold cursor-pointer rounded-lg hover:bg-slate-100 transition"
+              >
+                បោះបង់ការជ្រើស
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsBatchDeleteModalOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition active:scale-95 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>លុបសៀវភៅ {selectedBookIds.length} ក្បាលដែលបានជ្រើស</span>
+              </button>
+            </div>
+          ) : (
+            <span className="text-slate-400 text-[11px] sm:text-xs">
+              ចុចលើប្រអប់ធីកជ្រុងខាងឆ្វេងនៃសៀវភៅនីមួយៗ ឬធីក «ជ្រើសរើសទាំងអស់» ដើម្បីលុបជាក្រុម
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Book Catalog Grid */}
       {loading ? (
         <div className="text-center py-12 text-slate-400 text-sm">
@@ -471,12 +571,37 @@ export const Catalog: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fadeInUp">
           {books.map((book) => {
             const isAvail = (book.availability?.availableCopies ?? 0) > 0;
+            const isSelected = selectedBookIds.includes(book.id);
             return (
               <div
                 key={book.id}
                 onClick={() => handleOpenDetail(book.id)}
-                className="bg-white rounded-2xl border border-slate-200 hover:border-duc-gold/70 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-4 flex gap-4 cursor-pointer group"
+                className={`relative bg-white rounded-2xl border transition-all duration-300 p-4 flex gap-4 cursor-pointer group ${
+                  isSelected
+                    ? 'border-duc-blue ring-2 ring-duc-blue/40 bg-blue-50/20 shadow-md'
+                    : 'border-slate-200 hover:border-duc-gold/70 shadow-sm hover:shadow-lg hover:-translate-y-1'
+                }`}
               >
+                {/* Admin Select Checkbox */}
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={(e) => handleToggleSelectBook(book.id, e)}
+                    className={`absolute top-2.5 left-2.5 z-20 w-6 h-6 rounded-md border flex items-center justify-center transition shadow-xs cursor-pointer ${
+                      isSelected
+                        ? 'bg-duc-blue border-duc-blue text-white ring-2 ring-white'
+                        : 'bg-white/95 backdrop-blur-xs border-slate-300 hover:border-duc-blue text-slate-400 hover:text-duc-blue'
+                    }`}
+                    title={isSelected ? 'ដកការជ្រើសរើស' : 'ជ្រើសរើសសៀវភៅនេះ'}
+                  >
+                    {isSelected ? (
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    ) : (
+                      <div className="w-2.5 h-2.5 rounded-xs" />
+                    )}
+                  </button>
+                )}
+
                 <div className="w-24 sm:w-28 shrink-0">
                   <BookCoverCard book={book} className="h-36 w-full" />
                 </div>
@@ -1059,6 +1184,60 @@ export const Catalog: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Delete Confirmation Modal (Admin Only) */}
+      {isAdmin && isBatchDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-rose-200 overflow-hidden animate-scaleIn">
+            <div className="p-6 text-center space-y-4">
+              <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <Trash2 className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">
+                  បញ្ជាក់ការលុបសៀវភៅដែលបានជ្រើសរើស
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
+                  តើអ្នកពិតជាចង់លុបសៀវភៅចំនួន{' '}
+                  <span className="font-extrabold text-rose-600 underline text-base">
+                    {selectedBookIds.length} ក្បាល
+                  </span>{' '}
+                  ដែលបានជ្រើសរើសនេះចេញពីកាតាឡុកបណ្ណាល័យមែនទេ?
+                </p>
+                <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5 mt-3 text-left">
+                  ⚠️ <strong>ចំណាំ៖</strong> រាល់ទិន្នន័យក្បាលសៀវភៅជាក់ស្តែង (Physical Copies) និងប្រវត្តិនៃការខ្ចី-សងដែលពាក់ព័ន្ធនឹងត្រូវលុបចេញដោយស្វ័យប្រវត្តិ។ សកម្មភាពនេះមិនអាចត្រឡប់ក្រោយវិញបានទេ!
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={isBatchDeleting}
+                  onClick={() => setIsBatchDeleteModalOpen(false)}
+                  className="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs sm:text-sm hover:bg-slate-100 transition cursor-pointer"
+                >
+                  បោះបង់ (Cancel)
+                </button>
+                <button
+                  type="button"
+                  disabled={isBatchDeleting}
+                  onClick={handleBatchDelete}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm shadow-md transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {isBatchDeleting ? (
+                    <span>កំពុងលុប...</span>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>យល់ព្រមលុប ({selectedBookIds.length})</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

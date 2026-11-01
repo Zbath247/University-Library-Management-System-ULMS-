@@ -227,5 +227,58 @@ export class BookService {
       return { deletedCount: result.count };
     });
   }
+
+  static async batchDeleteBooks(bookIds: string[]) {
+    if (!bookIds || bookIds.length === 0) return { deletedCount: 0 };
+
+    return prisma.$transaction(async (tx) => {
+      // 1. Clear BookScanSession references to these books
+      await tx.bookScanSession.updateMany({
+        where: {
+          OR: [
+            { duplicateBookId: { in: bookIds } },
+            { savedBookId: { in: bookIds } },
+          ],
+        },
+        data: {
+          duplicateBookId: null,
+          savedBookId: null,
+          savedBookCopyId: null,
+        },
+      });
+
+      // 2. Find all copies of these books
+      const copies = await tx.bookCopy.findMany({
+        where: { bookId: { in: bookIds } },
+        select: { id: true },
+      });
+      const copyIds = copies.map((c) => c.id);
+
+      // Clear scan session references to these copies
+      if (copyIds.length > 0) {
+        await tx.bookScanSession.updateMany({
+          where: { savedBookCopyId: { in: copyIds } },
+          data: { savedBookCopyId: null },
+        });
+
+        // 3. Delete loans referencing these copies
+        await tx.loan.deleteMany({
+          where: { bookCopyId: { in: copyIds } },
+        });
+
+        // 4. Delete the copies
+        await tx.bookCopy.deleteMany({
+          where: { id: { in: copyIds } },
+        });
+      }
+
+      // 5. Delete the books
+      const result = await tx.book.deleteMany({
+        where: { id: { in: bookIds } },
+      });
+
+      return { deletedCount: result.count };
+    });
+  }
 }
 
