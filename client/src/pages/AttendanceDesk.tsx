@@ -850,9 +850,9 @@ export const AttendanceDesk: React.FC = () => {
                 }}
                 className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-duc-blue focus:outline-none bg-white"
               >
-                <option value="">គ្រប់មហាវិទ្យាល័យ / ដេប៉ាតឺម៉ង់</option>
+                <option value="">-- 📚 គ្រប់មហាវិទ្យាល័យ / ដេប៉ាតឺម៉ង់ --</option>
                 {DUC_FACULTIES.map((fac) => (
-                  <optgroup key={fac.code} label={fac.nameKhmer}>
+                  <optgroup key={fac.code} label={`🏛️ ${fac.nameKhmer}`}>
                     {fac.departments.map((d) => (
                       <option key={d.code} value={d.nameKhmer}>
                         ↳ {d.nameKhmer}
@@ -1215,7 +1215,7 @@ export const AttendanceDesk: React.FC = () => {
                 >
                   <option value="">-- ជ្រើសរើសដេប៉ាតឺម៉ង់ --</option>
                   {DUC_FACULTIES.map((fac) => (
-                    <optgroup key={fac.code} label={fac.nameKhmer}>
+                    <optgroup key={fac.code} label={`🏛️ ${fac.nameKhmer}`}>
                       {fac.departments.map((d) => (
                         <option key={d.code} value={d.nameKhmer}>
                           ↳ {d.nameKhmer}

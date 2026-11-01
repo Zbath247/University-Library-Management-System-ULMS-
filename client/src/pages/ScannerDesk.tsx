@@ -806,9 +806,9 @@ export const ScannerDesk: React.FC = () => {
                       .map((faculty) => {
                         const depts = categories.filter((c) => c.parentId === faculty.id);
                         return (
-                          <optgroup key={faculty.id} label={faculty.nameKhmer}>
+                          <optgroup key={faculty.id} label={`🏛️ ${faculty.nameKhmer}`}>
                             <option value={faculty.id} className="font-bold">
-                              {faculty.nameKhmer} (ទូទៅ - General)
+                              🏛️ {faculty.nameKhmer} (ទូទៅ - General)
                             </option>
                             {depts.map((d) => (
                               <option key={d.id} value={d.id}>

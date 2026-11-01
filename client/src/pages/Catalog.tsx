@@ -299,15 +299,15 @@ export const Catalog: React.FC = () => {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full py-2 px-2.5 sm:py-2.5 sm:px-3 text-xs sm:text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-duc-blue bg-white font-medium truncate"
             >
-              <option value="">-- {t.allCategories} (គ្រប់ដេប៉ាតឺម៉ង់) --</option>
+              <option value="">-- 📚 {t.allCategories} (គ្រប់ដេប៉ាតឺម៉ង់) --</option>
               {categories
                 .filter((cat) => !cat.parentId)
                 .map((faculty) => {
                   const depts = categories.filter((c) => c.parentId === faculty.id);
                   return (
-                    <optgroup key={faculty.id} label={faculty.nameKhmer}>
+                    <optgroup key={faculty.id} label={`🏛️ ${faculty.nameKhmer}`}>
                       <option value={faculty.id} className="font-bold">
-                        {faculty.nameKhmer} (សៀវភៅទាំងអស់ក្នុងមហាវិទ្យាល័យ)
+                        🏛️ {faculty.nameKhmer} (សៀវភៅទាំងអស់)
                       </option>
                       {depts.map((d) => (
                         <option key={d.id} value={d.id}>
@@ -817,9 +817,9 @@ export const Catalog: React.FC = () => {
                       .map((faculty) => {
                         const depts = categories.filter((c) => c.parentId === faculty.id);
                         return (
-                          <optgroup key={faculty.id} label={faculty.nameKhmer}>
+                          <optgroup key={faculty.id} label={`🏛️ ${faculty.nameKhmer}`}>
                             <option value={faculty.id} className="font-bold">
-                              ↳ {faculty.nameKhmer} (ទូទៅ)
+                              🏛️ {faculty.nameKhmer} (ទូទៅ)
                             </option>
                             {depts.map((d) => (
                               <option key={d.id} value={d.id}>

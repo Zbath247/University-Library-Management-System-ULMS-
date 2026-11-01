@@ -457,11 +457,18 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
                   onChange={(e) => setSelectedDepartment(e.target.value)}
                   className="w-full sm:w-auto text-[11px] sm:text-xs font-medium bg-white border border-slate-300 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:ring-2 focus:ring-duc-blue cursor-pointer shadow-xs truncate"
                 >
-                  <option value="ALL">-- គ្រប់ដេប៉ាតឺម៉ង់ទាំងអស់ ({availableDepartments.length}) --</option>
-                  {availableDepartments.map((dept) => (
-                    <option key={dept.code} value={dept.code}>
-                      {dept.nameKhmer}
-                    </option>
+                  <option value="ALL">-- 📚 គ្រប់ដេប៉ាតឺម៉ង់ទាំងអស់ ({availableDepartments.length}) --</option>
+                  {(selectedFaculty === 'ALL'
+                    ? DUC_FACULTIES
+                    : DUC_FACULTIES.filter((f) => f.code === selectedFaculty)
+                  ).map((fac) => (
+                    <optgroup key={fac.code} label={`🏛️ ${fac.nameKhmer}`}>
+                      {fac.departments.map((dept) => (
+                        <option key={dept.code} value={dept.code}>
+                          ↳ {dept.nameKhmer}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
 

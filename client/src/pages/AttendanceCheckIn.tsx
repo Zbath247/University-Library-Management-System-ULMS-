@@ -913,7 +913,7 @@ export const AttendanceCheckIn: React.FC = () => {
                   >
                     {DUC_FACULTIES.map((fac) => (
                       <option key={fac.code} value={fac.code}>
-                        {fac.nameKhmer}
+                        🏛️ {fac.nameKhmer}
                       </option>
                     ))}
                   </select>
@@ -931,7 +931,7 @@ export const AttendanceCheckIn: React.FC = () => {
                   >
                     {activeFaculty.departments.map((dept) => (
                       <option key={dept.code} value={dept.nameKhmer}>
-                        {dept.nameKhmer}
+                        ↳ {dept.nameKhmer}
                       </option>
                     ))}
                   </select>

@@ -180,13 +180,13 @@ export const Members: React.FC = () => {
               onChange={(e) => setSelectedDeptFilter(e.target.value)}
               className="text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-duc-blue font-medium text-slate-700"
             >
-              <option value="">-- ដេប៉ាតឺម៉ង់ទាំងអស់ / All Departments --</option>
+              <option value="">-- 📚 គ្រប់ដេប៉ាតឺម៉ង់ទាំងអស់ / All Departments --</option>
               {DUC_FACULTIES.map((fac) => (
-                <optgroup key={fac.code} label={fac.nameKhmer}>
-                  <option value={fac.nameKhmer}>{fac.nameKhmer} (ទាំងមូល)</option>
+                <optgroup key={fac.code} label={`🏛️ ${fac.nameKhmer}`}>
+                  <option value={fac.nameKhmer}>🏛️ {fac.nameKhmer} (ទាំងមូល)</option>
                   {fac.departments.map((dept) => (
                     <option key={dept.code} value={dept.nameKhmer}>
-                      {dept.nameKhmer}
+                      ↳ {dept.nameKhmer}
                     </option>
                   ))}
                 </optgroup>
@@ -401,13 +401,13 @@ export const Members: React.FC = () => {
                 >
                   <option value="">-- សូមជ្រើសរើសដេប៉ាតឺម៉ង់ --</option>
                   {DUC_FACULTIES.map((fac) => (
-                    <optgroup key={fac.code} label={fac.nameKhmer}>
+                    <optgroup key={fac.code} label={`🏛️ ${fac.nameKhmer}`}>
                       {fac.departments.map((dept) => (
                         <option
                           key={dept.code}
                           value={`${fac.nameKhmer} > ${dept.nameKhmer}`}
                         >
-                          {dept.nameKhmer}
+                          ↳ {dept.nameKhmer}
                         </option>
                       ))}
                     </optgroup>
@@ -541,13 +541,13 @@ export const Members: React.FC = () => {
                 >
                   <option value="">-- សូមជ្រើសរើសដេប៉ាតឺម៉ង់ --</option>
                   {DUC_FACULTIES.map((fac) => (
-                    <optgroup key={fac.code} label={fac.nameKhmer}>
+                    <optgroup key={fac.code} label={`🏛️ ${fac.nameKhmer}`}>
                       {fac.departments.map((dept) => (
                         <option
                           key={dept.code}
                           value={dept.nameKhmer}
                         >
-                          {dept.nameKhmer}
+                          ↳ {dept.nameKhmer}
                         </option>
                       ))}
                     </optgroup>
