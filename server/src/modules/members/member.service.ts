@@ -115,5 +115,38 @@ export class MemberService {
     await prisma.loan.deleteMany({ where: { memberId: id } });
     return prisma.member.delete({ where: { id } });
   }
+
+  static async batchDeleteMembers(memberIds: string[]) {
+    if (!memberIds || memberIds.length === 0) return { deletedCount: 0 };
+
+    const activeLoans = await prisma.loan.findMany({
+      where: {
+        memberId: { in: memberIds },
+        status: 'ACTIVE',
+      },
+      include: {
+        member: { select: { fullNameKhmer: true, memberCode: true } },
+      },
+    });
+
+    if (activeLoans.length > 0) {
+      const memberNames = Array.from(
+        new Set(activeLoans.map((l) => `${l.member.fullNameKhmer} (${l.member.memberCode})`))
+      ).join(', ');
+      throw new Error(
+        `មិនអាចលុបបានទេ ព្រោះសមាជិក [${memberNames}] កំពុងមានសៀវភៅខ្ចីមិនទាន់សង!`
+      );
+    }
+
+    return prisma.$transaction(async (tx) => {
+      await tx.loan.deleteMany({
+        where: { memberId: { in: memberIds } },
+      });
+      const result = await tx.member.deleteMany({
+        where: { id: { in: memberIds } },
+      });
+      return { deletedCount: result.count };
+    });
+  }
 }
 

@@ -8,6 +8,7 @@ const router = Router();
 // Staff endpoints (Librarian & Admin)
 router.get('/', requireRole([Role.LIBRARIAN, Role.ADMIN]), MemberController.search);
 router.get('/code/:code', requireRole([Role.LIBRARIAN, Role.ADMIN]), MemberController.lookupByCode);
+router.post('/batch-delete', requireRole([Role.ADMIN]), MemberController.batchDelete);
 router.get('/:id', requireRole([Role.LIBRARIAN, Role.ADMIN]), MemberController.getById);
 router.post('/', requireRole([Role.LIBRARIAN, Role.ADMIN]), MemberController.create);
 router.put('/:id', requireRole([Role.LIBRARIAN, Role.ADMIN]), MemberController.update);

@@ -134,5 +134,40 @@ export class MemberController {
       res.status(400).json({ success: false, error: { message: err.message } });
     }
   }
+
+  static async batchDelete(req: Request, res: Response): Promise<void> {
+    const { memberIds } = req.body || {};
+    if (!Array.isArray(memberIds) || memberIds.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: { message: 'សូមជ្រើសរើសសមាជិកដែលត្រូវលុបយ៉ាងតិច ១ នាក់ / Select at least one member to delete' },
+      });
+      return;
+    }
+
+    try {
+      const result = await MemberService.batchDeleteMembers(memberIds);
+
+      await AuditService.log({
+        userId: req.user?.id,
+        action: 'BATCH_DELETE_MEMBERS',
+        entity: 'MEMBER',
+        entityId: 'BATCH',
+        newValues: { deletedCount: result.deletedCount, memberIds },
+        ipAddress: req.ip,
+      });
+
+      res.json({
+        success: true,
+        message: `បានលុបសមាជិកចំនួន ${result.deletedCount} នាក់ដោយជោគជ័យ`,
+        data: result,
+      });
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        error: { message: err.message },
+      });
+    }
+  }
 }
 

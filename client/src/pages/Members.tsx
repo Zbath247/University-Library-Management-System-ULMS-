@@ -38,11 +38,18 @@ export const Members: React.FC = () => {
   const [editStatus, setEditStatus] = useState<'ACTIVE' | 'SUSPENDED' | 'EXPIRED'>('ACTIVE');
   const [editMaxLoans, setEditMaxLoans] = useState(3);
 
+  // Multi-select & Batch Delete (Admin)
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
+  const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
+
   const fetchMembers = async () => {
     setLoading(true);
     try {
       const res = await api.get('/members', { params: { q: searchQuery, limit: 50 } });
-      setMembers(res.data?.data || []);
+      const mList = res.data?.data || [];
+      setMembers(mList);
+      setSelectedMemberIds((prev) => prev.filter((id) => mList.some((m: any) => m.id === id)));
     } finally {
       setLoading(false);
     }
@@ -136,6 +143,39 @@ export const Members: React.FC = () => {
     return m.department?.includes(selectedDeptFilter);
   });
 
+  const handleToggleSelectAll = () => {
+    if (selectedMemberIds.length === filteredMembers.length) {
+      setSelectedMemberIds([]);
+    } else {
+      setSelectedMemberIds(filteredMembers.map((m) => m.id));
+    }
+  };
+
+  const handleToggleSelectMember = (memberId: string, e?: React.MouseEvent | React.ChangeEvent) => {
+    if (e && 'stopPropagation' in e) {
+      e.stopPropagation();
+    }
+    setSelectedMemberIds((prev) =>
+      prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]
+    );
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedMemberIds.length === 0) return;
+    setIsBatchDeleting(true);
+    try {
+      const res = await api.post('/members/batch-delete', { memberIds: selectedMemberIds });
+      alert(res.data?.message || `បានលុបសមាជិកចំនួន ${selectedMemberIds.length} នាក់ដោយជោគជ័យ!`);
+      setSelectedMemberIds([]);
+      setIsBatchDeleteModalOpen(false);
+      fetchMembers();
+    } catch (err: any) {
+      alert('បរាជ័យក្នុងការលុបសមាជិក: ' + (err.response?.data?.error?.message || err.message));
+    } finally {
+      setIsBatchDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -151,13 +191,27 @@ export const Members: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-duc-blue hover:bg-duc-navy text-white text-xs font-bold rounded-lg shadow transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{t.registerMember}</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {isAdmin && selectedMemberIds.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsBatchDeleteModalOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shadow-sm transition active:scale-95 cursor-pointer animate-pulse"
+              title="លុបសមាជិកដែលបានជ្រើសរើស"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>លុបដែលបានជ្រើស ({selectedMemberIds.length})</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-duc-blue hover:bg-duc-navy text-white text-xs font-bold rounded-lg shadow transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{t.registerMember}</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm p-4 space-y-4">
@@ -195,10 +249,71 @@ export const Members: React.FC = () => {
           </div>
         </div>
 
+        {/* Admin Multi-select Toolbar */}
+        {isAdmin && filteredMembers.length > 0 && (
+          <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 flex items-center justify-between flex-wrap gap-2 text-xs">
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer select-none font-bold text-slate-700 hover:text-duc-blue">
+                <input
+                  type="checkbox"
+                  checked={filteredMembers.length > 0 && selectedMemberIds.length === filteredMembers.length}
+                  onChange={handleToggleSelectAll}
+                  className="w-4 h-4 rounded border-slate-300 text-duc-blue focus:ring-duc-blue cursor-pointer"
+                />
+                <span>
+                  {selectedMemberIds.length === filteredMembers.length
+                    ? 'ដកការជ្រើសរើសទាំងអស់ (Deselect All)'
+                    : `ជ្រើសរើសទាំងអស់ (Select All - ${filteredMembers.length} នាក់)`}
+                </span>
+              </label>
+              {selectedMemberIds.length > 0 && (
+                <span className="bg-blue-100 text-duc-blue font-bold px-2.5 py-0.5 rounded-full text-xs">
+                  បានជ្រើស {selectedMemberIds.length} / {filteredMembers.length} នាក់
+                </span>
+              )}
+            </div>
+
+            {selectedMemberIds.length > 0 ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedMemberIds([])}
+                  className="px-2.5 py-1 text-slate-500 hover:text-slate-800 text-xs font-medium cursor-pointer rounded hover:bg-slate-200/60 transition"
+                >
+                  បោះបង់
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsBatchDeleteModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition active:scale-95 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>លុបសមាជិក {selectedMemberIds.length} នាក់ដែលបានជ្រើស</span>
+                </button>
+              </div>
+            ) : (
+              <span className="text-slate-400 text-[11px] hidden sm:inline">
+                ធីកលើប្រអប់ជួរនីមួយៗ ឬធីក «ជ្រើសរើសទាំងអស់» ដើម្បីលុបសមាជិកជាក្រុម
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
               <tr>
+                {isAdmin && (
+                  <th className="w-10 px-3 py-3 text-center">
+                    <input
+                      type="checkbox"
+                      checked={filteredMembers.length > 0 && selectedMemberIds.length === filteredMembers.length}
+                      onChange={handleToggleSelectAll}
+                      className="w-4 h-4 rounded border-slate-300 text-duc-blue focus:ring-duc-blue cursor-pointer"
+                      title="ជ្រើសរើសទាំងអស់ (Select All)"
+                    />
+                  </th>
+                )}
                 <th className="px-4 py-3 whitespace-nowrap">លេខកូដសមាជិក</th>
                 <th className="px-4 py-3 whitespace-nowrap">ឈ្មោះពេញ (Khmer / English)</th>
                 <th className="px-4 py-3 whitespace-nowrap">មហាវិទ្យាល័យ / ដេប៉ាតឺម៉ង់</th>
@@ -210,12 +325,30 @@ export const Members: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredMembers.map((m) => (
-                <tr key={m.id} className="hover:bg-slate-50/70">
-                  <td className="px-4 py-3 font-mono font-bold text-slate-800 whitespace-nowrap">
-                    {m.memberCode}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+              {filteredMembers.map((m) => {
+                const isSelected = selectedMemberIds.includes(m.id);
+                return (
+                  <tr
+                    key={m.id}
+                    className={`transition-colors ${
+                      isSelected ? 'bg-blue-50/70' : 'hover:bg-slate-50/70'
+                    }`}
+                  >
+                    {isAdmin && (
+                      <td className="w-10 px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => handleToggleSelectMember(m.id, e)}
+                          className="w-4 h-4 rounded border-slate-300 text-duc-blue focus:ring-duc-blue cursor-pointer"
+                          title="ជ្រើសរើសសមាជិកនេះ"
+                        />
+                      </td>
+                    )}
+                    <td className="px-4 py-3 font-mono font-bold text-slate-800 whitespace-nowrap">
+                      {m.memberCode}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
                     <div className="font-bold text-slate-800">{m.fullNameKhmer}</div>
                     <div className="text-[10px] text-slate-500 italic">{m.fullNameEnglish}</div>
                   </td>
@@ -295,7 +428,8 @@ export const Members: React.FC = () => {
                     </td>
                   )}
                 </tr>
-              ))}
+              );
+            })}
             </tbody>
           </table>
         </div>
@@ -611,6 +745,60 @@ export const Members: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Delete Confirmation Modal (Admin Only) */}
+      {isAdmin && isBatchDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-rose-200 overflow-hidden animate-scaleIn">
+            <div className="p-6 text-center space-y-4">
+              <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <Trash2 className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">
+                  បញ្ជាក់ការលុបសមាជិកដែលបានជ្រើសរើស
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
+                  តើអ្នកពិតជាចង់លុបសមាជិកចំនួន{' '}
+                  <span className="font-extrabold text-rose-600 underline text-base">
+                    {selectedMemberIds.length} នាក់
+                  </span>{' '}
+                  ដែលបានជ្រើសរើសនេះចេញពីប្រព័ន្ធបណ្ណាល័យមែនទេ?
+                </p>
+                <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5 mt-3 text-left">
+                  ⚠️ <strong>ចំណាំ៖</strong> ប្រព័ន្ធនឹងពិនិត្យស្វ័យប្រវត្តិ។ ប្រសិនបើសមាជិកណាមានសៀវភៅកំពុងខ្ចីមិនទាន់សង ប្រព័ន្ធនឹងមិនអនុញ្ញាតឱ្យលុបឡើយ។
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={isBatchDeleting}
+                  onClick={() => setIsBatchDeleteModalOpen(false)}
+                  className="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs sm:text-sm hover:bg-slate-100 transition cursor-pointer"
+                >
+                  បោះបង់ (Cancel)
+                </button>
+                <button
+                  type="button"
+                  disabled={isBatchDeleting}
+                  onClick={handleBatchDelete}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm shadow-md transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {isBatchDeleting ? (
+                    <span>កំពុងលុប...</span>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>យល់ព្រមលុប ({selectedMemberIds.length})</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
