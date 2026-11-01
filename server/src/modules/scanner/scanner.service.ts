@@ -93,7 +93,7 @@ export class ScannerService {
     };
   }
 
-  static async processOcrAndAi(sessionId: string, options?: { skipAi?: boolean }) {
+  static async processOcrAndAi(sessionId: string, options?: { skipAi?: boolean; manualOnly?: boolean }) {
     const session = await prisma.bookScanSession.findUnique({
       where: { id: sessionId },
       include: { images: true },
@@ -102,8 +102,8 @@ export class ScannerService {
     if (!session) throw new Error('SESSION_NOT_FOUND');
     if (session.images.length === 0) throw new Error('NO_IMAGES_UPLOADED: Please capture at least one image');
 
-    // Fast Mode: Bypass heavy OCR & Gemini AI, transition directly to NEEDS_REVIEW in < 15ms
-    if (options?.skipAi) {
+    // If pure manual entry requested (skip all OCR), transition directly to NEEDS_REVIEW
+    if (options?.manualOnly) {
       return prisma.bookScanSession.update({
         where: { id: sessionId },
         data: { status: ScanStatus.NEEDS_REVIEW },
@@ -117,7 +117,7 @@ export class ScannerService {
     });
 
     try {
-      // 1. Run OCR on each image
+      // 1. Run local Tesseract OCR on each image
       const ocrAdapter = process.env.NODE_ENV === 'test' ? new MockOcrAdapter() : new TesseractOcrAdapter();
       let combinedOcrText = '';
       let avgConfidence = 0;
@@ -138,7 +138,7 @@ export class ScannerService {
               count++;
             }
           } catch (ocrErr) {
-            console.warn(`OCR extraction failed/timed out on ${img.originalFileName}, using resilient fallback:`, ocrErr);
+            console.warn(`OCR extraction failed/timed out on ${img.originalFileName}:`, ocrErr);
             const fallback = new MockOcrAdapter();
             const fallbackResult = await fallback.extractText(buffer, img.mimeType, ['eng']);
             combinedOcrText += `\n--- PAGE: ${img.imageType} ---\n` + fallbackResult.rawText;
@@ -163,10 +163,12 @@ export class ScannerService {
         },
       });
 
-      // 2. Normalize metadata with AI or Regex Fallback
-      const normalizer = config.GEMINI_API_KEY
-        ? new GeminiAiNormalizer(config.GEMINI_API_KEY)
-        : new RegexFallbackNormalizer();
+      // 2. Normalize metadata with Fast Heuristic Regex (No AI) or Gemini AI
+      // When skipAi is true, use RegexFallbackNormalizer for instant (1ms) offline extraction
+      const normalizer =
+        options?.skipAi || !config.GEMINI_API_KEY
+          ? new RegexFallbackNormalizer()
+          : new GeminiAiNormalizer(config.GEMINI_API_KEY);
 
       const aiResult = await normalizer.normalizeMetadata(combinedOcrText);
 
@@ -311,33 +313,41 @@ export class ScannerService {
     // External candidates
     const googleCandidate = session.candidates.find((c) => c.source === CandidateSource.ISBN_GOOGLE_BOOKS);
     const openLibCandidate = session.candidates.find((c) => c.source === CandidateSource.ISBN_OPEN_LIBRARY);
+    const googleData = googleCandidate ? JSON.parse(googleCandidate.fieldValue) : null;
+    const openLibData = openLibCandidate ? JSON.parse(openLibCandidate.fieldValue) : null;
+    const extMatch = googleData || openLibData;
+
+    const finalTitle = title || extMatch?.title || '';
+    const isKhmer = /[\u1780-\u17FF]/.test(finalTitle);
 
     // Duplicate detection
     const duplicateCheck = await DuplicateService.findPotentialDuplicates({
-      isbn10,
-      isbn13,
-      title,
-      authors,
+      isbn10: isbn10 || extMatch?.isbn10,
+      isbn13: isbn13 || extMatch?.isbn13,
+      title: finalTitle,
+      authors: authors.length > 0 ? authors : (extMatch?.authors || []),
     });
 
     return {
       session,
       images: session.images,
       extracted: {
-        title,
-        subtitle,
-        authors,
-        isbn10,
-        isbn13,
-        publisher,
-        publicationYear,
-        edition,
-        language,
-        description,
+        title: finalTitle,
+        titleKhmer: isKhmer ? finalTitle : (extMatch?.title || ''),
+        titleEnglish: !isKhmer ? finalTitle : (extMatch?.title || ''),
+        subtitle: subtitle || extMatch?.subtitle || null,
+        authors: authors.length > 0 ? authors : (extMatch?.authors || []),
+        isbn10: isbn10 || extMatch?.isbn10 || null,
+        isbn13: isbn13 || extMatch?.isbn13 || null,
+        publisher: publisher || extMatch?.publisher || null,
+        publicationYear: publicationYear || extMatch?.publicationYear || null,
+        edition: edition || extMatch?.edition || null,
+        language: language || (isKhmer ? 'km' : 'en'),
+        description: description || extMatch?.description || null,
       },
       externalCandidates: {
-        googleBooks: googleCandidate ? JSON.parse(googleCandidate.fieldValue) : null,
-        openLibrary: openLibCandidate ? JSON.parse(openLibCandidate.fieldValue) : null,
+        googleBooks: googleData,
+        openLibrary: openLibData,
       },
       duplicateCheck,
       rawOcrText: session.candidates.find((c) => c.source === CandidateSource.OCR_RAW)?.fieldValue || '',

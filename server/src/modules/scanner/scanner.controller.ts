@@ -95,8 +95,9 @@ export class ScannerController {
   static async processOcr(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const skipAi = req.query.skipAi === 'true' || req.body?.skipAi === true;
+    const manualOnly = req.query.manualOnly === 'true' || req.body?.manualOnly === true;
     try {
-      const session = await ScannerService.processOcrAndAi(id, { skipAi });
+      const session = await ScannerService.processOcrAndAi(id, { skipAi, manualOnly });
       res.json({ success: true, data: session });
     } catch (err: any) {
       res.status(500).json({ success: false, error: { message: err.message } });

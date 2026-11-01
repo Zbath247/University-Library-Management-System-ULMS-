@@ -96,7 +96,7 @@ export const ScannerDesk: React.FC = () => {
     setStep('PROCESSING');
     setProcessingMessage(
       skipAi
-        ? '⚡ កំពុងភ្ជាប់រូបភាព និងបើកផ្ទាំងផ្ទៀងផ្ទាត់រហ័ស (Fast Mode)...'
+        ? '⚡ កំពុងស្កេនស្រង់អត្ថបទ និងទិន្នន័យសៀវភៅតាមរយៈ OCR (Fast Mode)...'
         : 'ដំណើរការ OCR កំពុងស្កេនស្រង់អត្ថបទ និងបំប្លែងទិន្នន័យតាមរយៈ AI...'
     );
     setProcessingError(null);
@@ -127,7 +127,7 @@ export const ScannerDesk: React.FC = () => {
         });
       }
 
-      // 4. Trigger OCR & AI or Fast Skip
+      // 4. Trigger OCR (Fast or AI)
       await api.post(`/scan-sessions/${sId}/process?skipAi=${skipAi}`);
 
       // 5. Fetch Complete Review Data
@@ -137,8 +137,11 @@ export const ScannerDesk: React.FC = () => {
 
       // Populate Editable Form
       const extracted = data?.extracted || {};
-      setTitleEnglish(extracted.title || '');
-      setTitleKhmer(extracted.title || '');
+      const rawTitle = extracted.title || '';
+      const isKhmer = /[\u1780-\u17FF]/.test(rawTitle);
+
+      setTitleEnglish(extracted.titleEnglish || (!isKhmer ? rawTitle : ''));
+      setTitleKhmer(extracted.titleKhmer || (isKhmer ? rawTitle : rawTitle));
       setSubtitle(extracted.subtitle || '');
       setAuthors(extracted.authors?.join(', ') || '');
       setIsbn10(extracted.isbn10 || '');
@@ -146,7 +149,7 @@ export const ScannerDesk: React.FC = () => {
       setPublisher(extracted.publisher || '');
       setPublicationYear(extracted.publicationYear ? String(extracted.publicationYear) : '');
       setEdition(extracted.edition || '');
-      setLanguage(extracted.language || 'km');
+      setLanguage(extracted.language || (isKhmer ? 'km' : 'en'));
 
       // Generate suggested Accession Number and Barcode
       const randomCode = Math.floor(1000 + Math.random() * 9000);
@@ -420,16 +423,16 @@ export const ScannerDesk: React.FC = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-              {/* Option 1: Fast Mode (Bypass AI completely - instant < 1s) */}
+              {/* Option 1: Fast Mode (OCR Local + Regex Rules - No External AI) */}
               <button
                 type="button"
                 onClick={() => handleStartProcessing(true)}
                 disabled={!coverFile && !titlePageFile}
                 className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                title="ភ្ជាប់រូបភាពដែលបានថត ហើយចូលទៅបំពេញទិន្នន័យផ្ទាល់ភ្លាមៗ ដោយមិនបាច់រង់ចាំ AI"
+                title="ស្កេនស្រង់ចំណងជើង អ្នកនិពន្ធ និងលេខ ISBN ពីរូបភាពភ្លាមៗ ក្នុងរយៈពេល ២-៣ វិនាទី ដោយមិនប្រើ AI ខាងក្រៅ"
               >
                 <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
-                <span>ថតរួចផ្ទៀងផ្ទាត់ភ្លាម (មិនប្រើ AI)</span>
+                <span>ថតរួចស្រង់ទិន្នន័យ (មិនប្រើ AI)</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 

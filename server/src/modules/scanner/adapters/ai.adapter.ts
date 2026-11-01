@@ -8,56 +8,82 @@ export class RegexFallbackNormalizer implements IAiNormalizer {
     confidence: number | null;
     rawResponse?: string;
   }> {
-    const lines = ocrText
+    const rawLines = ocrText
       .split('\n')
       .map((l) => l.trim())
-      .filter((l) => l.length > 0);
+      .filter((l) => l.length > 0 && !/^---+.*---+$/.test(l));
 
-    // Extract ISBN
+    // Extract ISBN (13-digit or 10-digit)
     const isbns = IsbnUtils.extractIsbnsFromText(ocrText);
     const isbn13 = isbns.find((i) => i.length === 13) || null;
     const isbn10 = isbns.find((i) => i.length === 10) || null;
 
-    // Extract Year (e.g., Copyright 2022 or © 2022)
-    const yearMatch = ocrText.match(/(?:copyright|©|\(c\)|published|year)?\s*(19\d{2}|20\d{2})/i);
+    // Direct standalone 13-digit sequence fallback (978... or 979...)
+    let fallbackIsbn13 = isbn13;
+    if (!fallbackIsbn13) {
+      const directMatch = ocrText.match(/97[89][0-9\-\s]{10,14}[0-9X]/i);
+      if (directMatch) {
+        const cleaned = directMatch[0].replace(/[^0-9X]/gi, '');
+        if (cleaned.length === 13) fallbackIsbn13 = cleaned;
+      }
+    }
+
+    // Extract Year (e.g., 2005, 2024, Copyright 2022, ឆ្នាំបោះពុម្ព ២០០៥)
+    const yearMatch = ocrText.match(/(?:copyright|©|\(c\)|published|year|ឆ្នាំ|បោះពុម្ព)?\s*(19\d{2}|20\d{2})/i);
     const publicationYear = yearMatch ? parseInt(yearMatch[1], 10) : null;
 
-    // Heuristically pick title from top lines
-    const titleCandidates = lines.filter(
-      (l) =>
-        !/isbn|copyright|press|edition|published|page|volume|issn|all rights/i.test(l) &&
-        l.length > 2 &&
-        l.length < 120
+    // Filter out metadata and noise lines to extract clean title candidates
+    const nonTitleRegex = /isbn|issn|copyright|©|\(c\)|press|edition|published|បោះពុម្ព|page|volume|all rights|duc|table of contents|http|www|\.com/i;
+    const titleCandidates = rawLines.filter(
+      (l) => !nonTitleRegex.test(l) && l.length >= 3 && l.length <= 120
     );
 
-    const title = titleCandidates[0] || 'Unknown Scanned Title';
-    const subtitle = titleCandidates[1] && titleCandidates[1].length < 80 ? titleCandidates[1] : null;
+    // Differentiate Khmer and English titles
+    const khmerLine = titleCandidates.find((l) => /[\u1780-\u17FF]/.test(l) && !/អនុបណ្ឌិត|បណ្ឌិត|និពន្ធ|រៀបរៀង|គ្រឹះស្ថាន/i.test(l));
+    const englishLine = titleCandidates.find((l) => /[a-zA-Z]{3,}/.test(l) && !/msc|phd|prof|dr|author|edition/i.test(l));
 
-    // Authors extraction heuristic
-    const authorLine = lines.find((l) => /by\s+|author|authors|និពន្ធដោយ/i.test(l));
+    const title = khmerLine || englishLine || titleCandidates[0] || '';
+    const subtitle = titleCandidates[1] && titleCandidates[1] !== title && titleCandidates[1].length < 80 ? titleCandidates[1] : null;
+
+    // Authors extraction heuristic (Khmer titles + English prefixes)
     let authors: string[] = [];
-    if (authorLine) {
-      authors = authorLine
-        .replace(/by\s+|author(s)?:|និពន្ធដោយ:?/gi, '')
-        .split(/,|and|និង/)
-        .map((a) => a.trim())
-        .filter((a) => a.length > 0);
-    }
-    if (authors.length === 0) {
-      // Pick next line if available
-      authors = titleCandidates[2] ? [titleCandidates[2]] : ['Unknown Author'];
+    const authorPattern = /(?:by\s+|author(?:s)?:?|written by:?|និពន្ធដោយ:?|រៀបរៀងដោយ:?|ចងក្រងដោយ:?|អនុបណ្ឌិត|បណ្ឌិត|សាស្ត្រាចារ្យ|msc\.|phd|dr\.)\s*([^\n\r,;]+)/gi;
+    let authorMatch;
+    while ((authorMatch = authorPattern.exec(ocrText)) !== null) {
+      const rawName = authorMatch[1].replace(/^(?:អនុបណ្ឌិត|បណ្ឌិត|សាស្ត្រាចារ្យ|MSc\.|Dr\.|Prof\.)\s*/i, '').trim();
+      if (rawName.length >= 2 && rawName.length <= 40 && !authors.includes(rawName)) {
+        authors.push(rawName);
+      }
     }
 
-    // Publisher heuristic
-    const publisherMatch = ocrText.match(/([A-Z][a-zA-Z\s]+(?:Press|Publishing|Publishers|Books|House|បណ្ណាគារ))/i);
-    const publisher = publisherMatch ? publisherMatch[1].trim() : null;
+    // If no authors matched via prefix, check authorLine
+    if (authors.length === 0) {
+      const authorLine = rawLines.find((l) => /by\s+|author|authors|និពន្ធ|រៀបរៀង|ចងក្រង/i.test(l));
+      if (authorLine) {
+        authors = authorLine
+          .replace(/^(?:by\s+|author(?:s)?:|និពន្ធដោយ:?|រៀបរៀងដោយ:?|អនុបណ្ឌិត|MSc\.)\s*/gi, '')
+          .split(/,|and|និង|&/)
+          .map((a) => a.trim())
+          .filter((a) => a.length > 0);
+      }
+    }
+
+    // Publisher heuristic (Editions Angkor, គ្រឹះស្ថានបោះពុម្ព..., Publishing, Press)
+    let publisher: string | null = null;
+    const publisherKhmer = ocrText.match(/គ្រឹះស្ថានបោះពុម្ព[^\n\r,.]+/i);
+    const publisherEng = ocrText.match(/(?:Editions\s+[A-Za-z]+|[A-Z][a-zA-Z\s]+(?:Press|Publishing|Publishers|Books|House))/i);
+    if (publisherKhmer) {
+      publisher = publisherKhmer[0].trim();
+    } else if (publisherEng) {
+      publisher = publisherEng[0].trim();
+    }
 
     const metadata: ExtractedBookMetadata = {
       title,
       subtitle,
-      authors,
+      authors: authors.length > 0 ? authors : [],
       isbn10,
-      isbn13,
+      isbn13: fallbackIsbn13,
       publisher,
       publicationYear,
       edition: null,
@@ -69,8 +95,8 @@ export class RegexFallbackNormalizer implements IAiNormalizer {
 
     return {
       metadata,
-      confidence: 65.0, // Baseline heuristic confidence
-      rawResponse: 'Heuristic regex normalization (No external AI API called)',
+      confidence: 70.0,
+      rawResponse: 'Fast Heuristic OCR extraction (No external AI API called)',
     };
   }
 }
