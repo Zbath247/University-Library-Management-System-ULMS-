@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { api, BookItem } from '../api/client';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,6 +20,8 @@ import {
   Sparkles,
   Image,
   BookPlus,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 import { BookCoverCard } from './Dashboard';
 import { BookCoverUploadField } from '../components/BookCoverUploadField';
@@ -35,6 +37,28 @@ export const Catalog: React.FC = () => {
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('');
+  const [isCatDropdownOpen, setIsCatDropdownOpen] = useState(false);
+  const catDropdownRef = useRef<HTMLDivElement>(null);
+
+  const selectedCategoryLabel = useMemo(() => {
+    if (!selectedCategory) return `-- 📚 ${t.allCategories} (គ្រប់ដេប៉ាតឺម៉ង់) --`;
+    const found = categories.find((c) => c.id === selectedCategory);
+    if (!found) return `-- 📚 ${t.allCategories} --`;
+    if (!found.parentId) {
+      return `🏛️ ${found.nameKhmer} (សៀវភៅទាំងអស់)`;
+    }
+    return `↳ ${found.nameKhmer}`;
+  }, [selectedCategory, categories, t.allCategories]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (catDropdownRef.current && !catDropdownRef.current.contains(event.target as Node)) {
+        setIsCatDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Selected book for details modal
   const [selectedBook, setSelectedBook] = useState<any | null>(null);
@@ -293,31 +317,80 @@ export const Catalog: React.FC = () => {
             />
           </div>
 
-          <div className="md:col-span-3">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full py-2 px-2.5 sm:py-2.5 sm:px-3 text-xs sm:text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-duc-blue bg-white font-medium truncate"
+          <div className="md:col-span-3 relative" ref={catDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsCatDropdownOpen(!isCatDropdownOpen)}
+              className="w-full py-2 px-2.5 sm:py-2.5 sm:px-3 text-xs sm:text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-duc-blue bg-white font-medium flex items-center justify-between gap-1.5 shadow-xs text-left"
             >
-              <option value="">-- 📚 {t.allCategories} (គ្រប់ដេប៉ាតឺម៉ង់) --</option>
-              {categories
-                .filter((cat) => !cat.parentId)
-                .map((faculty) => {
-                  const depts = categories.filter((c) => c.parentId === faculty.id);
-                  return (
-                    <optgroup key={faculty.id} label={`🏛️ ${faculty.nameKhmer}`}>
-                      <option value={faculty.id} className="font-bold">
-                        🏛️ {faculty.nameKhmer} (សៀវភៅទាំងអស់)
-                      </option>
-                      {depts.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          ↳ {d.nameKhmer}
-                        </option>
-                      ))}
-                    </optgroup>
-                  );
-                })}
-            </select>
+              <span className="truncate text-slate-800">{selectedCategoryLabel}</span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${isCatDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isCatDropdownOpen && (
+              <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-72 sm:max-h-80 overflow-y-auto text-xs divide-y divide-slate-100 animate-fadeIn">
+                <div
+                  onClick={() => {
+                    setSelectedCategory('');
+                    setIsCatDropdownOpen(false);
+                  }}
+                  className={`px-3 py-2 font-bold cursor-pointer hover:bg-blue-50 transition flex items-center justify-between ${
+                    !selectedCategory ? 'text-duc-blue bg-blue-50 font-black' : 'text-slate-700'
+                  }`}
+                >
+                  <span>-- 📚 {t.allCategories} (គ្រប់ដេប៉ាតឺម៉ង់) --</span>
+                  {!selectedCategory && <Check className="w-3.5 h-3.5 text-duc-blue shrink-0" />}
+                </div>
+
+                {categories
+                  .filter((cat) => !cat.parentId)
+                  .map((faculty) => {
+                    const depts = categories.filter((c) => c.parentId === faculty.id);
+                    const isFacultySelected = selectedCategory === faculty.id;
+                    return (
+                      <div key={faculty.id} className="py-0.5">
+                        <div
+                          onClick={() => {
+                            setSelectedCategory(faculty.id);
+                            setIsCatDropdownOpen(false);
+                          }}
+                          className={`px-2.5 py-1.5 font-bold cursor-pointer hover:bg-blue-50 transition flex items-center justify-between ${
+                            isFacultySelected ? 'text-duc-blue bg-blue-50 font-black' : 'text-slate-800 bg-slate-50/70'
+                          }`}
+                        >
+                          <span className="flex items-center gap-1 truncate text-xs">
+                            <span>🏛️</span>
+                            <span className="truncate">{faculty.nameKhmer}</span>
+                            <span className="text-[10px] text-slate-400 font-normal shrink-0">(សៀវភៅទាំងអស់)</span>
+                          </span>
+                          {isFacultySelected && <Check className="w-3.5 h-3.5 text-duc-blue shrink-0" />}
+                        </div>
+
+                        <div className="space-y-0.5">
+                          {depts.map((d) => {
+                            const isDeptSelected = selectedCategory === d.id;
+                            return (
+                              <div
+                                key={d.id}
+                                onClick={() => {
+                                  setSelectedCategory(d.id);
+                                  setIsCatDropdownOpen(false);
+                                }}
+                                className={`pl-5 pr-3 py-1 cursor-pointer hover:bg-blue-50 transition flex items-center justify-between text-[11px] sm:text-xs ${
+                                  isDeptSelected ? 'text-duc-blue bg-blue-50/80 font-bold' : 'text-slate-600'
+                                }`}
+                              >
+                                <span className="truncate">↳ {d.nameKhmer}</span>
+                                {isDeptSelected && <Check className="w-3 h-3 text-duc-blue shrink-0" />}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
           </div>
 
           <div className="md:col-span-2">
