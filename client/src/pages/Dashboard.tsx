@@ -46,16 +46,27 @@ export const BookCoverCard: React.FC<{
   book: any;
   className?: string;
 }> = ({ book, className = 'h-48' }) => {
-  if (book?.coverImageUrl) {
+  const [imgError, setImgError] = useState(false);
+
+  // If coverImageUrl exists and has not failed to load
+  if (book?.coverImageUrl && !imgError) {
+    let src = book.coverImageUrl;
+    // If it's a relative /api path and we have a backend origin configured, prepend it
+    if (src.startsWith('/api')) {
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      if (apiBase) {
+        const origin = apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
+        src = `${origin}${src}`;
+      }
+    }
+
     return (
       <div className={`relative overflow-hidden rounded-xl shadow-md border border-slate-200/80 bg-slate-100 group ${className}`}>
         <img
-          src={book.coverImageUrl}
+          src={src}
           alt={book.titleKhmer || 'Book Cover'}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          onError={(e) => {
-            (e.target as HTMLElement).style.display = 'none';
-          }}
+          onError={() => setImgError(true)}
         />
         {/* Book spine glossy reflection */}
         <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/30 via-white/10 to-transparent pointer-events-none" />
@@ -63,7 +74,7 @@ export const BookCoverCard: React.FC<{
     );
   }
 
-  // Fallback: Authentic Academic DUC Cover
+  // Fallback: Authentic Academic DUC Cover (shown when no image OR when image fails to load)
   return (
     <div
       className={`relative overflow-hidden rounded-xl shadow-md border border-slate-200/80 bg-gradient-to-br from-duc-navy via-duc-blue to-slate-900 text-white p-3 flex flex-col justify-between ${className}`}

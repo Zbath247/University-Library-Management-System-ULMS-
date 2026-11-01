@@ -83,14 +83,57 @@ export const ScannerDesk: React.FC = () => {
     });
   }, []);
 
-  const handleCoverCaptured = (file: File) => {
-    setCoverFile(file);
-    setCoverPreview(URL.createObjectURL(file));
+  // Helper: compress image file to lightweight Base64 data URI (~40-60KB) for permanent cloud database storage
+  const fileToCompressedBase64 = (file: File, maxWidth = 800, quality = 0.82): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          } else {
+            resolve(e.target?.result as string);
+          }
+        };
+        img.onerror = () => resolve(e.target?.result as string);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
   };
 
-  const handleTitlePageCaptured = (file: File) => {
+  const handleCoverCaptured = async (file: File) => {
+    setCoverFile(file);
+    try {
+      const dataUrl = await fileToCompressedBase64(file);
+      setCoverPreview(dataUrl);
+      setCoverImageUrl(dataUrl);
+    } catch {
+      setCoverPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleTitlePageCaptured = async (file: File) => {
     setTitlePageFile(file);
-    setTitlePagePreview(URL.createObjectURL(file));
+    try {
+      const dataUrl = await fileToCompressedBase64(file);
+      setTitlePagePreview(dataUrl);
+    } catch {
+      setTitlePagePreview(URL.createObjectURL(file));
+    }
   };
 
   const handleStartProcessing = async (skipAi = false) => {
@@ -165,12 +208,22 @@ export const ScannerDesk: React.FC = () => {
         setSaveMode('ADD_COPY_TO_EXISTING');
       }
 
-      // Automatically use scanned cover photo or preview
-      const coverScanImg = data?.images?.find((img: any) => img.imageType === 'COVER');
-      if (coverScanImg) {
-        setCoverImageUrl(`/api/v1/scan-sessions/${sId}/images/${coverScanImg.id}`);
-      } else if (coverPreview) {
-        setCoverImageUrl(coverPreview);
+      // Automatically retain compressed Base64 data URL so book cover is permanently stored in cloud database
+      if (!coverImageUrl || !coverImageUrl.startsWith('data:')) {
+        if (coverPreview && coverPreview.startsWith('data:')) {
+          setCoverImageUrl(coverPreview);
+        } else if (coverFile) {
+          try {
+            const dataUrl = await fileToCompressedBase64(coverFile);
+            setCoverImageUrl(dataUrl);
+            setCoverPreview(dataUrl);
+          } catch {
+            const coverScanImg = data?.images?.find((img: any) => img.imageType === 'COVER');
+            if (coverScanImg) {
+              setCoverImageUrl(`/api/v1/scan-sessions/${sId}/images/${coverScanImg.id}`);
+            }
+          }
+        }
       }
 
       setStep('REVIEW');

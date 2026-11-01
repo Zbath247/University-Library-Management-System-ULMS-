@@ -445,18 +445,18 @@ export class ScannerService {
       if (mode === 'ADD_COPY_TO_EXISTING' && existingBookId) {
         bookId = existingBookId;
       } else {
-        // Automatically retain scanned cover image if none was manually set
+        // Automatically retain scanned cover image as persistent base64 data URL if none or transient was set
         let finalCoverUrl = bookData.coverImageUrl || null;
-        if (!finalCoverUrl && session.images?.length) {
-          const coverImage = session.images.find((img) => img.imageType === ScanImageType.COVER);
+        if ((!finalCoverUrl || finalCoverUrl.includes('/scan-sessions/')) && session.images?.length) {
+          const coverImage = session.images.find((img) => img.imageType === ScanImageType.COVER) || session.images[0];
           if (coverImage && fs.existsSync(coverImage.filePath)) {
-            const uploadsDir = path.resolve(process.cwd(), 'storage/uploads');
-            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-            const ext = path.extname(coverImage.filePath) || '.jpg';
-            const newFilename = `scan-cover-${coverImage.id}${ext}`;
-            const targetPath = path.join(uploadsDir, newFilename);
-            fs.copyFileSync(coverImage.filePath, targetPath);
-            finalCoverUrl = `/api/v1/uploads/${newFilename}`;
+            try {
+              const buffer = fs.readFileSync(coverImage.filePath);
+              const mime = coverImage.mimeType || 'image/jpeg';
+              finalCoverUrl = `data:${mime};base64,${buffer.toString('base64')}`;
+            } catch (err) {
+              console.warn('Failed to convert scanned cover to base64:', err);
+            }
           }
         }
 
