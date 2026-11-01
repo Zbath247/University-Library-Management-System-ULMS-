@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { BookCoverCard } from './Dashboard';
 import { BookCoverUploadField } from '../components/BookCoverUploadField';
+import { CompactCategorySelect } from '../components/CompactCategorySelect';
 
 export const Catalog: React.FC = () => {
   const { t } = useLanguage();
@@ -798,18 +799,11 @@ export const Catalog: React.FC = () => {
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">ប្រភេទសៀវភៅ (Category) *</label>
-                  <select
-                    required
+                  <CompactCategorySelect
+                    categories={categories}
                     value={editCategoryId}
-                    onChange={(e) => setEditCategoryId(e.target.value)}
-                    className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-duc-blue bg-white"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nameKhmer || c.nameEnglish}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(id) => setEditCategoryId(id)}
+                  />
                 </div>
               </div>
 
@@ -917,31 +911,11 @@ export const Catalog: React.FC = () => {
                   <label className="block font-bold text-slate-700 mb-1">
                     មហាវិទ្យាល័យ / ដេប៉ាតឺម៉ង់ (Department) *
                   </label>
-                  <select
-                    required
+                  <CompactCategorySelect
+                    categories={categories}
                     value={addCategoryId}
-                    onChange={(e) => setAddCategoryId(e.target.value)}
-                    className="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-duc-blue focus:outline-none bg-white font-medium"
-                  >
-                    <option value="">-- ជ្រើសរើសដេប៉ាតឺម៉ង់ --</option>
-                    {categories
-                      .filter((cat) => !cat.parentId)
-                      .map((faculty) => {
-                        const depts = categories.filter((c) => c.parentId === faculty.id);
-                        return (
-                          <optgroup key={faculty.id} label={`🏛️ ${faculty.nameKhmer}`}>
-                            <option value={faculty.id} className="font-bold">
-                              🏛️ {faculty.nameKhmer} (ទូទៅ)
-                            </option>
-                            {depts.map((d) => (
-                              <option key={d.id} value={d.id}>
-                                ↳ {d.nameKhmer}
-                              </option>
-                            ))}
-                          </optgroup>
-                        );
-                      })}
-                  </select>
+                    onChange={(id) => setAddCategoryId(id)}
+                  />
                 </div>
               </div>
 
