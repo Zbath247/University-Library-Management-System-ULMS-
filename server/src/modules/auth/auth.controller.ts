@@ -3,6 +3,8 @@ import { AuthService } from './auth.service';
 import { loginSchema } from './auth.schema';
 import { AuditService } from '../audit/audit.service';
 import { Role } from '../../types/enums';
+import { TokenUtils } from '../../utils/token.utils';
+import { extractAuthUser } from '../../middleware/auth';
 
 export class AuthController {
   static async login(req: Request, res: Response): Promise<void> {
@@ -63,9 +65,17 @@ export class AuthController {
         userAgent: req.headers['user-agent'],
       });
 
+      const token = TokenUtils.generateToken({
+        id: user.id,
+        username: user.username,
+        fullName: user.fullName,
+        role: user.role,
+      });
+
       res.json({
         success: true,
         data: {
+          token,
           user: {
             id: user.id,
             username: user.username,
@@ -79,7 +89,8 @@ export class AuthController {
   }
 
   static async me(req: Request, res: Response): Promise<void> {
-    if (!req.session || !req.session.userId) {
+    const authUser = extractAuthUser(req);
+    if (!authUser) {
       res.json({
         success: true,
         data: { user: null },
@@ -87,7 +98,7 @@ export class AuthController {
       return;
     }
 
-    const user = await AuthService.getUserById(req.session.userId);
+    const user = await AuthService.getUserById(authUser.id);
     res.json({
       success: true,
       data: { user },

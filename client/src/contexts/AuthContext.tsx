@@ -49,6 +49,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await api.post('/auth/login', { username, password });
       if (res.data?.success && res.data?.data?.user) {
+        if (res.data.data.token) {
+          localStorage.setItem('duc_ulms_token', res.data.data.token);
+        }
         setUser(res.data.data.user);
         return true;
       }
@@ -63,6 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await api.post('/auth/logout');
     } finally {
+      localStorage.removeItem('duc_ulms_token');
       setUser(null);
     }
   };

@@ -16,11 +16,22 @@ export const api = axios.create({
   },
 });
 
+// Auto-attach Bearer token to all API requests if stored in localStorage (Essential for mobile browsers)
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('duc_ulms_token');
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // Auto-handle 401 Unauthorized across the entire app
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      localStorage.removeItem('duc_ulms_token');
       window.dispatchEvent(new CustomEvent('auth:unauthorized'));
     }
     return Promise.reject(error);
