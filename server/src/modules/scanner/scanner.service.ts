@@ -489,8 +489,20 @@ export class ScannerService {
 
       for (let i = 0; i < count; i++) {
         const copyNum = String(i + 1).padStart(2, '0');
-        const accNum = count === 1 ? copyData.accessionNumber : `${cleanBaseAccession}-${copyNum}`;
-        const barCode = count === 1 ? copyData.barcode : `${cleanBaseBarcode}-${copyNum}`;
+        let accNum = count === 1 ? copyData.accessionNumber : `${cleanBaseAccession}-${copyNum}`;
+        let barCode = count === 1 ? copyData.barcode : `${cleanBaseBarcode}-${copyNum}`;
+
+        // Ensure unique accession number
+        const existingAcc = await tx.bookCopy.findUnique({ where: { accessionNumber: accNum } });
+        if (existingAcc) {
+          accNum = `${accNum}-${Math.floor(100 + Math.random() * 900)}`;
+        }
+
+        // Ensure unique barcode
+        const existingBar = await tx.bookCopy.findUnique({ where: { barcode: barCode } });
+        if (existingBar) {
+          barCode = `${barCode}-${Math.floor(100 + Math.random() * 900)}`;
+        }
 
         const createdCopy = await tx.bookCopy.create({
           data: {
@@ -498,7 +510,7 @@ export class ScannerService {
             accessionNumber: accNum,
             barcode: barCode,
             callNumber: copyData.callNumber || null,
-            shelfLocation: copyData.shelfLocation,
+            shelfLocation: copyData.shelfLocation || 'ទូទី ១, ជាន់ A-01',
             condition: copyData.condition || CopyCondition.NEW,
             status: CopyStatus.AVAILABLE,
           },

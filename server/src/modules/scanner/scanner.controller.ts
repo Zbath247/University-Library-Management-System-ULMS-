@@ -9,24 +9,24 @@ const approveSchema = z.object({
   existingBookId: z.string().uuid().optional(),
   bookData: z.object({
     titleKhmer: z.string().min(1, 'Khmer title is required'),
-    titleEnglish: z.string().min(1, 'English title is required'),
+    titleEnglish: z.string().optional().default(''),
     subtitle: z.string().optional().nullable(),
     isbn10: z.string().optional().nullable(),
     isbn13: z.string().optional().nullable(),
-    authors: z.array(z.string().min(1)).min(1),
+    authors: z.array(z.string()).default([]),
     publisher: z.string().optional().nullable(),
     publicationYear: z.number().int().optional().nullable(),
     edition: z.string().optional().nullable(),
     language: z.string().default('km'),
-    categoryId: z.string().uuid(),
+    categoryId: z.string().uuid('Invalid category ID'),
     descriptionKhmer: z.string().optional().nullable(),
     descriptionEnglish: z.string().optional().nullable(),
     coverImageUrl: z.string().optional().nullable(),
   }),
   copyData: z.object({
     accessionNumber: z.string().min(1, 'Accession number is required'),
-    barcode: z.string().min(1, 'Barcode is required'),
-    shelfLocation: z.string().min(1, 'Shelf location is required'),
+    barcode: z.string().optional().default(''),
+    shelfLocation: z.string().optional().default('ទូទី ១, ជាន់ A-01'),
     callNumber: z.string().optional().nullable(),
     condition: z.nativeEnum(CopyCondition).optional(),
     copyCount: z.number().int().min(1).max(100).default(1),
@@ -130,17 +130,35 @@ export class ScannerController {
     const parseResult = approveSchema.safeParse(req.body);
 
     if (!parseResult.success) {
+      const errorMsg = parseResult.error.errors
+        .map((e) => `${e.path.join('.')}: ${e.message}`)
+        .join(', ');
       res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', details: parseResult.error.errors },
+        error: { code: 'VALIDATION_ERROR', message: errorMsg, details: parseResult.error.errors },
       });
       return;
     }
 
     try {
+      const data = parseResult.data;
+      const cleanBookData = {
+        ...data.bookData,
+        titleEnglish: data.bookData.titleEnglish?.trim() || data.bookData.titleKhmer.trim() || 'Untitled Book',
+        authors: data.bookData.authors?.length ? data.bookData.authors : ['មិនស្គាល់ (Unknown)'],
+      };
+      const cleanCopyData = {
+        ...data.copyData,
+        barcode: data.copyData.barcode?.trim() || data.copyData.accessionNumber.trim(),
+        shelfLocation: data.copyData.shelfLocation?.trim() || 'ទូទី ១, ជាន់ A-01',
+      };
+
       const result = await ScannerService.approveAndSaveCatalog({
         sessionId: id,
-        ...parseResult.data,
+        mode: data.mode,
+        existingBookId: data.existingBookId,
+        bookData: cleanBookData,
+        copyData: cleanCopyData,
       });
 
       await AuditService.log({

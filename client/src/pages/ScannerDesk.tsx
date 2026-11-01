@@ -252,6 +252,22 @@ export const ScannerDesk: React.FC = () => {
 
   const handleApproveSave = async () => {
     if (!sessionId) return;
+
+    const resolvedTitleKhmer = titleKhmer.trim() || titleEnglish.trim() || 'សៀវភៅគ្មានចំណងជើង';
+    const resolvedTitleEnglish = titleEnglish.trim() || titleKhmer.trim() || 'Untitled Book';
+    const resolvedAuthors = authors.trim()
+      ? authors.split(/[,;]/).map((a) => a.trim()).filter((a) => a.length > 0)
+      : ['មិនស្គាល់ (Unknown)'];
+    const resolvedCategory = categoryId || categories.find((c) => c.parentId)?.id || categories[0]?.id;
+    const resolvedAccession = accessionNumber.trim() || `DUC-BC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const resolvedBarcode = barcode.trim() || resolvedAccession;
+    const resolvedShelf = shelfLocation.trim() || 'ទូទី ១, ជាន់ A-01';
+
+    if (!resolvedCategory) {
+      alert('សូមជ្រើសរើសមហាវិទ្យាល័យ ឬដេប៉ាតឺម៉ង់ (Category) មុនពេលរក្សាទុក!');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -259,23 +275,23 @@ export const ScannerDesk: React.FC = () => {
         mode: saveMode,
         existingBookId: reviewData?.duplicateCheck?.matchedBook?.id,
         bookData: {
-          titleKhmer: titleKhmer.trim(),
-          titleEnglish: titleEnglish.trim(),
+          titleKhmer: resolvedTitleKhmer,
+          titleEnglish: resolvedTitleEnglish,
           subtitle: subtitle.trim() || null,
           isbn10: isbn10.trim() || null,
           isbn13: isbn13.trim() || null,
-          authors: authors.split(/[,;]/).map((a) => a.trim()).filter((a) => a.length > 0),
+          authors: resolvedAuthors.length ? resolvedAuthors : ['មិនស្គាល់ (Unknown)'],
           publisher: publisher.trim() || null,
           publicationYear: publicationYear ? parseInt(publicationYear, 10) : null,
           edition: edition.trim() || null,
-          language,
-          categoryId,
+          language: language || 'km',
+          categoryId: resolvedCategory,
           coverImageUrl: coverImageUrl.trim() || null,
         },
         copyData: {
-          accessionNumber: accessionNumber.trim(),
-          barcode: barcode.trim(),
-          shelfLocation: shelfLocation.trim(),
+          accessionNumber: resolvedAccession,
+          barcode: resolvedBarcode,
+          shelfLocation: resolvedShelf,
           condition: 'NEW',
           copyCount: Math.max(1, Math.min(100, Number(copyCount) || 1)),
         },
@@ -284,7 +300,12 @@ export const ScannerDesk: React.FC = () => {
       await api.post(`/scan-sessions/${sessionId}/approve`, payload);
       setStep('SUCCESS');
     } catch (err: any) {
-      alert('Error approving catalog: ' + (err.response?.data?.error?.message || err.message));
+      const errorMsg =
+        err.response?.data?.error?.message ||
+        err.response?.data?.error?.details?.map((d: any) => `${d.path?.join('.')}: ${d.message}`).join('\n') ||
+        err.response?.data?.message ||
+        err.message;
+      alert('Error approving catalog: ' + errorMsg);
     } finally {
       setSubmitting(false);
     }
@@ -674,7 +695,7 @@ export const ScannerDesk: React.FC = () => {
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-bold text-slate-700">
-                      ចំណងជើងជាភាសាអង់គ្លេស / English Title *
+                      ចំណងជើងជាភាសាអង់គ្លេស / English Title
                     </label>
                     {titleEnglish && (
                       <button
@@ -689,10 +710,9 @@ export const ScannerDesk: React.FC = () => {
                   </div>
                   <input
                     type="text"
-                    required
                     value={titleEnglish}
                     onChange={(e) => setTitleEnglish(e.target.value)}
-                    placeholder="ឧ. ASP.net with Visual Studio 2005"
+                    placeholder="ឧ. ASP.net with Visual Studio 2005 (ស្រេចចិត្ត)"
                     className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-duc-blue focus:outline-none"
                   />
                 </div>
@@ -700,7 +720,7 @@ export const ScannerDesk: React.FC = () => {
                 <div className="sm:col-span-2">
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-bold text-slate-700">
-                      អ្នកនិពន្ធ / Authors (ញែកដោយសញ្ញាក្បៀស) *
+                      អ្នកនិពន្ធ / Authors (ញែកដោយសញ្ញាក្បៀស)
                     </label>
                     {authors && (
                       <button
@@ -715,10 +735,9 @@ export const ScannerDesk: React.FC = () => {
                   </div>
                   <input
                     type="text"
-                    required
                     value={authors}
                     onChange={(e) => setAuthors(e.target.value)}
-                    placeholder="ឧ. ជី គឹមអ៊ី, តៃ សំអាង"
+                    placeholder="ឧ. ជី គឹមអ៊ី, តៃ សំអាង (ស្រេចចិត្ត)"
                     className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-duc-blue focus:outline-none"
                   />
                 </div>
@@ -865,11 +884,13 @@ export const ScannerDesk: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">{t.barcode} *</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      {t.barcode} (ស្រេចចិត្ត / ស្វ័យប្រវត្ត)
+                    </label>
                     <input
                       type="text"
-                      required
                       value={barcode}
+                      placeholder={accessionNumber || 'ស្វ័យប្រវត្ត'}
                       onChange={(e) => setBarcode(e.target.value)}
                       className="w-full p-2 text-sm font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-duc-blue focus:outline-none"
                     />
