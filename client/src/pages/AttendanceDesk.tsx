@@ -854,7 +854,7 @@ export const AttendanceDesk: React.FC = () => {
                 {DUC_FACULTIES.map((fac) => (
                   <optgroup key={fac.code} label={fac.nameKhmer}>
                     {fac.departments.map((d) => (
-                      <option key={d.code} value={`${d.nameKhmer} (${d.nameEnglish})`}>
+                      <option key={d.code} value={d.nameKhmer}>
                         ↳ {d.nameKhmer}
                       </option>
                     ))}
@@ -1217,13 +1217,13 @@ export const AttendanceDesk: React.FC = () => {
                   {DUC_FACULTIES.map((fac) => (
                     <optgroup key={fac.code} label={fac.nameKhmer}>
                       {fac.departments.map((d) => (
-                        <option key={d.code} value={`${d.nameKhmer} (${d.nameEnglish})`}>
+                        <option key={d.code} value={d.nameKhmer}>
                           ↳ {d.nameKhmer}
                         </option>
                       ))}
                     </optgroup>
                   ))}
-                  {editAttDept && !DUC_FACULTIES.some(f => f.departments.some(d => `${d.nameKhmer} (${d.nameEnglish})` === editAttDept)) && (
+                  {editAttDept && !DUC_FACULTIES.some(f => f.departments.some(d => d.nameKhmer === editAttDept || `${d.nameKhmer} (${d.nameEnglish})` === editAttDept)) && (
                     <option value={editAttDept}>{editAttDept}</option>
                   )}
                 </select>

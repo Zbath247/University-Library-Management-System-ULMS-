@@ -259,10 +259,10 @@ export const Catalog: React.FC = () => {
       <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800">
+            <h1 className="text-lg sm:text-2xl font-extrabold text-slate-800">
               {t.navCatalog}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500">
+            <p className="text-[11px] sm:text-xs text-slate-500">
               ស្វែងរក និងពិនិត្យមើលសៀវភៅ ព្រមទាំងចំនួនក្បាលសៀវភៅដែលអាចខ្ចីបានជាក់ស្តែងក្នុងបណ្ណាល័យ
             </p>
           </div>
@@ -281,15 +281,15 @@ export const Catalog: React.FC = () => {
         </div>
 
         {/* Search Bar & Filters Form */}
-        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-3">
+        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-2.5 sm:gap-3">
           <div className="md:col-span-6 relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 sm:top-3" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t.searchPlaceholder}
-              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-duc-blue"
+              className="w-full pl-9 pr-3 py-2 sm:py-2.5 text-xs sm:text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-duc-blue font-medium"
             />
           </div>
 
@@ -297,7 +297,7 @@ export const Catalog: React.FC = () => {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full py-2.5 px-3 text-xs sm:text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-duc-blue bg-white font-medium"
+              className="w-full py-2 px-2.5 sm:py-2.5 sm:px-3 text-xs sm:text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-duc-blue bg-white font-medium truncate"
             >
               <option value="">-- {t.allCategories} (គ្រប់ដេប៉ាតឺម៉ង់) --</option>
               {categories
@@ -305,13 +305,13 @@ export const Catalog: React.FC = () => {
                 .map((faculty) => {
                   const depts = categories.filter((c) => c.parentId === faculty.id);
                   return (
-                    <optgroup key={faculty.id} label={`${faculty.nameKhmer} (${faculty.code})`}>
+                    <optgroup key={faculty.id} label={faculty.nameKhmer}>
                       <option value={faculty.id} className="font-bold">
                         {faculty.nameKhmer} (សៀវភៅទាំងអស់ក្នុងមហាវិទ្យាល័យ)
                       </option>
                       {depts.map((d) => (
                         <option key={d.id} value={d.id}>
-                          ↳ {d.nameKhmer} ({d.code})
+                          ↳ {d.nameKhmer}
                         </option>
                       ))}
                     </optgroup>
@@ -324,7 +324,7 @@ export const Catalog: React.FC = () => {
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
-              className="w-full py-2.5 px-3 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-duc-blue bg-white"
+              className="w-full py-2 px-2.5 sm:py-2.5 sm:px-3 text-xs sm:text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-duc-blue bg-white font-medium"
             >
               <option value="">{t.filterByLanguage} (ទាំងអស់)</option>
               <option value="km">ភាសាខ្មែរ (Khmer)</option>
@@ -335,7 +335,7 @@ export const Catalog: React.FC = () => {
           <div className="md:col-span-1">
             <button
               type="submit"
-              className="w-full h-full py-2.5 px-4 bg-duc-blue hover:bg-duc-navy text-white font-bold text-sm rounded-lg transition shadow-sm"
+              className="w-full h-full py-2 px-3 sm:py-2.5 sm:px-4 bg-duc-blue hover:bg-duc-navy text-white font-bold text-xs sm:text-sm rounded-lg transition shadow-sm"
             >
               ស្វែងរក
             </button>
@@ -446,7 +446,7 @@ export const Catalog: React.FC = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="text-xs font-bold text-duc-blue bg-blue-50 px-2 py-0.5 rounded">
-                    {selectedBook.category?.nameKhmer} ({selectedBook.category?.code})
+                    {selectedBook.category?.nameKhmer || selectedBook.category?.nameEnglish || ''}
                   </span>
                   <h2 className="text-xl font-extrabold text-slate-900 mt-2">
                     {selectedBook.titleKhmer}
@@ -694,7 +694,7 @@ export const Catalog: React.FC = () => {
                   >
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.nameKhmer} ({c.code})
+                        {c.nameKhmer || c.nameEnglish}
                       </option>
                     ))}
                   </select>
@@ -817,13 +817,13 @@ export const Catalog: React.FC = () => {
                       .map((faculty) => {
                         const depts = categories.filter((c) => c.parentId === faculty.id);
                         return (
-                          <optgroup key={faculty.id} label={`${faculty.nameKhmer} (${faculty.code})`}>
+                          <optgroup key={faculty.id} label={faculty.nameKhmer}>
                             <option value={faculty.id} className="font-bold">
                               ↳ {faculty.nameKhmer} (ទូទៅ)
                             </option>
                             {depts.map((d) => (
                               <option key={d.id} value={d.id}>
-                                ↳ {d.nameKhmer} ({d.code})
+                                ↳ {d.nameKhmer}
                               </option>
                             ))}
                           </optgroup>

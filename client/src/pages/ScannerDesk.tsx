@@ -799,20 +799,20 @@ export const ScannerDesk: React.FC = () => {
                   <select
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-duc-blue focus:outline-none bg-white"
+                    className="w-full p-2.5 text-xs sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-duc-blue focus:outline-none bg-white font-medium"
                   >
                     {categories
                       .filter((c) => !c.parentId)
                       .map((faculty) => {
                         const depts = categories.filter((c) => c.parentId === faculty.id);
                         return (
-                          <optgroup key={faculty.id} label={`${faculty.nameKhmer} (${faculty.code})`}>
+                          <optgroup key={faculty.id} label={faculty.nameKhmer}>
                             <option value={faculty.id} className="font-bold">
                               {faculty.nameKhmer} (ទូទៅ - General)
                             </option>
                             {depts.map((d) => (
                               <option key={d.id} value={d.id}>
-                                ↳ {d.nameKhmer} ({d.code})
+                                ↳ {d.nameKhmer}
                               </option>
                             ))}
                           </optgroup>

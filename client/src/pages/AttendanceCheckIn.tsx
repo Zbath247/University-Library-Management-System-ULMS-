@@ -87,7 +87,7 @@ export const AttendanceCheckIn: React.FC = () => {
     const fac = DUC_FACULTIES.find((f) => f.code === code);
     if (fac && fac.departments.length > 0) {
       const firstDept = fac.departments[0];
-      setDepartment(`${firstDept.nameKhmer} (${firstDept.code})`);
+      setDepartment(firstDept.nameKhmer);
     }
   };
 
@@ -913,7 +913,7 @@ export const AttendanceCheckIn: React.FC = () => {
                   >
                     {DUC_FACULTIES.map((fac) => (
                       <option key={fac.code} value={fac.code}>
-                        {fac.nameKhmer} ({fac.code})
+                        {fac.nameKhmer}
                       </option>
                     ))}
                   </select>
@@ -930,8 +930,8 @@ export const AttendanceCheckIn: React.FC = () => {
                     className="w-full max-w-full p-2.5 rounded-lg bg-slate-800 border border-duc-gold/40 text-white text-xs focus:outline-none focus:ring-2 focus:ring-duc-gold truncate cursor-pointer font-medium"
                   >
                     {activeFaculty.departments.map((dept) => (
-                      <option key={dept.code} value={`${dept.nameKhmer} (${dept.code})`}>
-                        {dept.nameKhmer} ({dept.code})
+                      <option key={dept.code} value={dept.nameKhmer}>
+                        {dept.nameKhmer}
                       </option>
                     ))}
                   </select>

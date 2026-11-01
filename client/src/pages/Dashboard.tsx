@@ -460,7 +460,7 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
                   <option value="ALL">-- គ្រប់ដេប៉ាតឺម៉ង់ទាំងអស់ ({availableDepartments.length}) --</option>
                   {availableDepartments.map((dept) => (
                     <option key={dept.code} value={dept.code}>
-                      {dept.nameKhmer} ({dept.code})
+                      {dept.nameKhmer}
                     </option>
                   ))}
                 </select>
@@ -621,7 +621,7 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
 
                 <div className="flex-1 space-y-2">
                   <span className="text-xs font-bold text-duc-blue bg-blue-50 px-2.5 py-0.5 rounded-md inline-block">
-                    {previewBook.category?.nameKhmer} ({previewBook.category?.code})
+                    {previewBook.category?.nameKhmer || previewBook.category?.nameEnglish || ''}
                   </span>
 
                   <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-snug">

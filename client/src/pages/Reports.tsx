@@ -109,7 +109,6 @@ export const Reports: React.FC = () => {
                 <div key={cat.code} className="flex items-center justify-between text-xs p-2 bg-slate-50 rounded-lg">
                   <div>
                     <span className="font-bold text-slate-800">{cat.nameKhmer}</span>
-                    <span className="text-slate-400 font-mono ml-2">({cat.code})</span>
                   </div>
                   <span className="font-bold text-duc-blue bg-blue-50 px-2.5 py-0.5 rounded">
                     {cat.bookCount} ចំណងជើង

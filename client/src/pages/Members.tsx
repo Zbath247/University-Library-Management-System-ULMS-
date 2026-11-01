@@ -407,7 +407,7 @@ export const Members: React.FC = () => {
                           key={dept.code}
                           value={`${fac.nameKhmer} > ${dept.nameKhmer}`}
                         >
-                          {dept.nameKhmer} ({dept.nameEnglish})
+                          {dept.nameKhmer}
                         </option>
                       ))}
                     </optgroup>
@@ -545,9 +545,9 @@ export const Members: React.FC = () => {
                       {fac.departments.map((dept) => (
                         <option
                           key={dept.code}
-                          value={`${dept.nameKhmer} (${dept.code})`}
+                          value={dept.nameKhmer}
                         >
-                          {dept.nameKhmer} ({dept.code})
+                          {dept.nameKhmer}
                         </option>
                       ))}
                     </optgroup>
