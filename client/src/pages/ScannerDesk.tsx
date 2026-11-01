@@ -42,6 +42,7 @@ export const ScannerDesk: React.FC = () => {
   const [processingMessage, setProcessingMessage] = useState<string>('');
   const [reviewData, setReviewData] = useState<any | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
+  const [showRawOcr, setShowRawOcr] = useState<boolean>(false);
   const [isLookingUpIsbn, setIsLookingUpIsbn] = useState<boolean>(false);
   const [isbnLookupMessage, setIsbnLookupMessage] = useState<string | null>(null);
 
@@ -499,12 +500,29 @@ export const ScannerDesk: React.FC = () => {
                 )}
               </div>
 
-              {reviewData.extracted && (
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-slate-500">{t.ocrConfidence}:</span>
-                  <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                    ~90% (Verified)
-                  </span>
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-slate-500">វិធីសាស្ត្រស្រង់ទិន្នន័យ:</span>
+                <span className="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                  {reviewData.externalCandidates?.googleBooks || reviewData.externalCandidates?.openLibrary
+                    ? '✨ ISBN Match (100%)'
+                    : '⚡ Local OCR + Heuristic'}
+                </span>
+              </div>
+
+              {reviewData.rawOcrText && (
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowRawOcr(!showRawOcr)}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium underline flex items-center gap-1 cursor-pointer"
+                  >
+                    {showRawOcr ? '▲ លាក់អត្ថបទ OCR' : '▼ មើលអត្ថបទដែល OCR អានបាន (Raw Text)'}
+                  </button>
+                  {showRawOcr && (
+                    <pre className="mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-[11px] text-slate-700 whitespace-pre-wrap max-h-48 overflow-y-auto font-mono">
+                      {reviewData.rawOcrText}
+                    </pre>
+                  )}
                 </div>
               )}
             </div>
@@ -617,40 +635,79 @@ export const ScannerDesk: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    ចំណងជើងជាភាសាខ្មែរ / Khmer Title *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-700">
+                      ចំណងជើងជាភាសាខ្មែរ / Khmer Title *
+                    </label>
+                    {titleKhmer && (
+                      <button
+                        type="button"
+                        onClick={() => setTitleKhmer('')}
+                        className="text-[10px] text-slate-400 hover:text-red-500 cursor-pointer"
+                        title="លុបអត្ថបទចេញ"
+                      >
+                        សម្អាត
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="text"
                     required
                     value={titleKhmer}
                     onChange={(e) => setTitleKhmer(e.target.value)}
+                    placeholder="ឧ. រចនាគេហទំព័រ ជាមួយ ASP.net"
                     className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-duc-blue focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    ចំណងជើងជាភាសាអង់គ្លេស / English Title *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-700">
+                      ចំណងជើងជាភាសាអង់គ្លេស / English Title *
+                    </label>
+                    {titleEnglish && (
+                      <button
+                        type="button"
+                        onClick={() => setTitleEnglish('')}
+                        className="text-[10px] text-slate-400 hover:text-red-500 cursor-pointer"
+                        title="លុបអត្ថបទចេញ"
+                      >
+                        សម្អាត
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="text"
                     required
                     value={titleEnglish}
                     onChange={(e) => setTitleEnglish(e.target.value)}
+                    placeholder="ឧ. ASP.net with Visual Studio 2005"
                     className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-duc-blue focus:outline-none"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    អ្នកនិពន្ធ / Authors (ញែកដោយសញ្ញាក្បៀស) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-700">
+                      អ្នកនិពន្ធ / Authors (ញែកដោយសញ្ញាក្បៀស) *
+                    </label>
+                    {authors && (
+                      <button
+                        type="button"
+                        onClick={() => setAuthors('')}
+                        className="text-[10px] text-slate-400 hover:text-red-500 cursor-pointer"
+                        title="លុបអត្ថបទចេញ"
+                      >
+                        សម្អាត
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="text"
                     required
                     value={authors}
                     onChange={(e) => setAuthors(e.target.value)}
+                    placeholder="ឧ. ជី គឹមអ៊ី, តៃ សំអាង"
                     className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-duc-blue focus:outline-none"
                   />
                 </div>

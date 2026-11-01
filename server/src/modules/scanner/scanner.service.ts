@@ -163,6 +163,17 @@ export class ScannerService {
         },
       });
 
+      // Collect image buffers for Vision AI if needed
+      const imageBuffers: { buffer: Buffer; mimeType: string }[] = [];
+      for (const img of session.images) {
+        if (fs.existsSync(img.filePath)) {
+          imageBuffers.push({
+            buffer: fs.readFileSync(img.filePath),
+            mimeType: img.mimeType || 'image/jpeg',
+          });
+        }
+      }
+
       // 2. Normalize metadata with Fast Heuristic Regex (No AI) or Gemini AI
       // When skipAi is true, use RegexFallbackNormalizer for instant (1ms) offline extraction
       const normalizer =
@@ -170,7 +181,7 @@ export class ScannerService {
           ? new RegexFallbackNormalizer()
           : new GeminiAiNormalizer(config.GEMINI_API_KEY);
 
-      const aiResult = await normalizer.normalizeMetadata(combinedOcrText);
+      const aiResult = await normalizer.normalizeMetadata(combinedOcrText, imageBuffers);
 
       // Save structured AI candidates
       const fields = [

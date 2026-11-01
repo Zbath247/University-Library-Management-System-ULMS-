@@ -33,7 +33,10 @@ export const extractedBookMetadataSchema = z.object({
 export type ExtractedBookMetadata = z.infer<typeof extractedBookMetadataSchema>;
 
 export interface IAiNormalizer {
-  normalizeMetadata(ocrText: string): Promise<{
+  normalizeMetadata(
+    ocrText: string,
+    imageBuffers?: { buffer: Buffer; mimeType: string }[]
+  ): Promise<{
     metadata: ExtractedBookMetadata;
     confidence: number | null;
     rawResponse?: string;
