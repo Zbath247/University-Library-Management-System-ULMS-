@@ -125,6 +125,42 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
     '#7c3aed', // purple
   ];
 
+  // Custom Gender Pie Chart Label (clean, dark, properly positioned)
+  const renderGenderPieLabel = ({ cx, cy, midAngle, outerRadius, percent, name }: any) => {
+    const RADIAN = Math.PI / 180;
+    const radius = outerRadius + 14;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    const pct = Math.round((percent || 0) * 100);
+
+    return (
+      <g>
+        {/* Crisp badge for 100% legibility */}
+        <rect
+          x={x > cx ? x - 2 : x - 62}
+          y={y - 8}
+          width={64}
+          height={16}
+          rx={3}
+          fill="#ffffff"
+          stroke="#cbd5e1"
+          strokeWidth={0.8}
+        />
+        <text
+          x={x > cx ? x + 30 : x - 30}
+          y={y + 3.5}
+          fill="#0f172a"
+          textAnchor="middle"
+          fontSize={8.5}
+          fontWeight="bold"
+          style={{ fontFamily: "'Kantumruy Pro', sans-serif" }}
+        >
+          {name} {pct}%
+        </text>
+      </g>
+    );
+  };
+
   // Direct PDF Download Handler
   const handleDownloadPdf = async () => {
     if (!reportRef.current) return;
@@ -161,11 +197,16 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto print:p-0 print:bg-white print:static">
-      {/* Print-specific style */}
+      {/* Global Style for Printing and Beautiful Khmer Typography */}
       <style>{`
         @page {
           size: A4 landscape;
-          margin: 6mm 8mm;
+          margin: 5mm 7mm;
+        }
+        #duc-executive-sheet,
+        #duc-executive-sheet * {
+          font-family: 'Kantumruy Pro', 'Battambang', 'Siemreap', sans-serif !important;
+          -webkit-font-smoothing: antialiased;
         }
         @media print {
           body * {
@@ -181,7 +222,7 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
             width: 100% !important;
             min-width: 100% !important;
             margin: 0 !important;
-            padding: 4mm !important;
+            padding: 3mm !important;
             box-shadow: none !important;
             border: none !important;
             background: white !important;
@@ -256,7 +297,7 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
               type="button"
               onClick={handleDownloadPdf}
               disabled={isExporting || loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow transition-all disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow transition-all disabled:opacity-50 cursor-pointer"
             >
               {isExporting ? (
                 <>
@@ -275,7 +316,7 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
             <button
               type="button"
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow transition-all cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>បោះពុម្ព (Print / PDF)</span>
@@ -285,7 +326,7 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors ml-1"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors ml-1 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -293,7 +334,7 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
         </div>
 
         {/* Scrollable Preview Area */}
-        <div className="flex-1 overflow-auto bg-slate-100 p-3 sm:p-6 flex justify-center items-start print:p-0 print:bg-white print:overflow-visible">
+        <div className="flex-1 overflow-auto bg-slate-100 p-2 sm:p-4 flex justify-center items-start print:p-0 print:bg-white print:overflow-visible">
           {loading ? (
             <div className="py-24 flex flex-col items-center justify-center text-slate-500">
               <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-2" />
@@ -304,39 +345,46 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
             <div
               id="duc-executive-sheet"
               ref={reportRef}
-              className="bg-white text-slate-900 border border-slate-300 shadow-xl print:shadow-none print:border-none w-[1140px] min-w-[1140px] p-6 mx-auto select-none font-sans"
-              style={{ minHeight: '790px' }}
+              className="bg-white text-slate-900 border border-slate-300 shadow-xl print:shadow-none print:border-none w-[1120px] min-w-[1120px] p-5 mx-auto select-none font-khmer"
+              style={{ minHeight: '740px' }}
             >
               {/* Header: DUC Crest Logo + Main Title */}
-              <div className="flex items-center justify-center relative mb-4 pb-2 border-b-2 border-slate-800">
-                <div className="absolute left-2 flex items-center gap-2">
+              <div className="flex items-center justify-between relative mb-3 pb-2 border-b-2 border-slate-800">
+                <div className="flex items-center gap-2.5">
                   <img
                     src="/logo.png"
                     alt="DUC Emblem"
-                    className="w-14 h-14 object-contain drop-shadow-sm"
+                    className="w-12 h-12 object-contain drop-shadow-xs"
                   />
+                  <div className="text-left">
+                    <div className="text-[11px] font-bold text-slate-900 leading-tight">សាកលវិទ្យាល័យឌីជីថលកម្ពុជា</div>
+                    <div className="text-[8.5px] text-slate-500 font-medium">Digital University of Cambodia</div>
+                  </div>
                 </div>
-                <h1 className="text-2xl font-bold text-[#1e3a8a] tracking-normal text-center">
+
+                <h1 className="text-xl md:text-2xl font-bold text-[#1e3a8a] tracking-normal text-center pr-8">
                   Monthly Students'Reading in Library Report - {year}
                 </h1>
+
+                <div className="w-12"></div>
               </div>
 
               {/* Main Content: 2-Column Modular Grid */}
-              <div className="grid grid-cols-12 gap-4">
+              <div className="grid grid-cols-12 gap-3.5">
                 {/* =========================================================================
                     LEFT COLUMN (Cols 1-7): Section 1 (Monthly Reading) & Section 3 (Gender)
                    ========================================================================= */}
-                <div className="col-span-7 flex flex-col justify-between space-y-4">
+                <div className="col-span-7 flex flex-col justify-between space-y-3">
                   {/* 1) Monthly Students' Reading Qty in Library Report */}
                   <div>
-                    <h2 className="text-[13px] font-bold text-slate-900 mb-1.5">
+                    <h2 className="text-[12.5px] font-bold text-slate-900 mb-1">
                       1) Monthly Students' Reading Qty in Library Report
                     </h2>
 
                     <div className="grid grid-cols-12 gap-2">
                       {/* Section 1 Table */}
                       <div className="col-span-6 overflow-hidden">
-                        <table className="w-full border-collapse border border-black text-[10.5px]">
+                        <table className="w-full border-collapse border border-black text-[10px]">
                           <thead>
                             <tr className="bg-[#fef08a] text-black font-bold">
                               <th className="border border-black px-1 py-0.5 text-center w-7">No</th>
@@ -364,16 +412,16 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
                             ))}
                             {/* Total Row in Yellow */}
                             <tr className="bg-[#fef08a] font-bold text-black border-t-2 border-black">
-                              <td colSpan={2} className="border border-black px-2 py-1 text-center">
+                              <td colSpan={2} className="border border-black px-2 py-0.5 text-center font-bold">
                                 Total:
                               </td>
-                              <td className="border border-black px-1 py-1 text-center text-black">
+                              <td className="border border-black px-1 py-0.5 text-center font-bold text-black">
                                 {totalMonthly.toLocaleString()}
                               </td>
-                              <td className="border border-black px-1 py-1 text-center">
+                              <td className="border border-black px-1 py-0.5 text-center font-bold">
                                 {totalMonthly > 0 ? '100%' : ''}
                               </td>
-                              <td className="border border-black px-1 py-1 text-center"></td>
+                              <td className="border border-black px-1 py-0.5 text-center"></td>
                             </tr>
                           </tbody>
                         </table>
@@ -381,24 +429,24 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
 
                       {/* Section 1 Line Chart */}
                       <div className="col-span-6 border border-black bg-white p-1.5 flex flex-col justify-between">
-                        <div className="text-[11px] font-bold text-[#1e3a8a] text-center mb-1 leading-tight">
+                        <div className="text-[10.5px] font-bold text-[#1e3a8a] text-center mb-0.5 leading-tight">
                           Monthly Student Reading Qty in Library Report <br />
                           (Jan-July - {year})
                         </div>
-                        <div className="h-44 w-full">
+                        <div className="h-40 w-full">
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={lineChartData} margin={{ top: 15, right: 10, left: -25, bottom: 5 }}>
+                            <LineChart data={lineChartData} margin={{ top: 14, right: 10, left: -25, bottom: 4 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                               <XAxis
                                 dataKey="name"
-                                tick={{ fontSize: 8, fill: '#334155' }}
+                                tick={{ fontSize: 7.5, fill: '#334155' }}
                                 interval={0}
                                 tickLine={false}
                               />
                               <YAxis
                                 domain={[0, 350]}
                                 ticks={[0, 50, 100, 150, 200, 250, 300, 350]}
-                                tick={{ fontSize: 8, fill: '#334155' }}
+                                tick={{ fontSize: 7.5, fill: '#334155' }}
                                 tickLine={false}
                               />
                               <Line
@@ -412,7 +460,7 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
                                   value ? (
                                     <text
                                       x={x}
-                                      y={y - 6}
+                                      y={y - 5}
                                       fill="#dc2626"
                                       fontSize={8}
                                       fontWeight="bold"
@@ -427,7 +475,7 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
                           </ResponsiveContainer>
                         </div>
                         {/* Month index numbers row (1 to 12) */}
-                        <div className="grid grid-cols-12 text-[7.5px] text-center text-slate-500 font-semibold border-t border-slate-200 pt-0.5">
+                        <div className="grid grid-cols-12 text-[7px] text-center text-slate-500 font-semibold border-t border-slate-200 pt-0.5">
                           {lineChartData.map((m: any) => (
                             <div key={m.num}>{m.num}</div>
                           ))}
@@ -438,14 +486,14 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
 
                   {/* 3) Monthly Reading Qty By Gender Report */}
                   <div>
-                    <h2 className="text-[13px] font-bold text-slate-900 mb-1.5">
+                    <h2 className="text-[12.5px] font-bold text-slate-900 mb-1">
                       3) Monthly Reading Qty By Gender Report
                     </h2>
 
                     <div className="grid grid-cols-12 gap-2">
                       {/* Section 3 Table */}
                       <div className="col-span-6 overflow-hidden">
-                        <table className="w-full border-collapse border border-black text-[10.5px]">
+                        <table className="w-full border-collapse border border-black text-[10px]">
                           <thead>
                             <tr className="bg-[#fef08a] text-black font-bold">
                               <th className="border border-black px-1 py-1 text-center w-7">No</th>
@@ -467,37 +515,37 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
                             ))}
                             {/* Total Row in Yellow */}
                             <tr className="bg-[#fef08a] font-bold text-black border-t-2 border-black">
-                              <td colSpan={2} className="border border-black px-2 py-1 text-center">
+                              <td colSpan={2} className="border border-black px-2 py-1 text-center font-bold">
                                 Total:
                               </td>
-                              <td className="border border-black px-1 py-1 text-center text-black">
+                              <td className="border border-black px-1 py-1 text-center font-bold text-black">
                                 {totalGender.toLocaleString()}
                               </td>
-                              <td className="border border-black px-1 py-1 text-center">100%</td>
+                              <td className="border border-black px-1 py-1 text-center font-bold">100%</td>
                               <td className="border border-black px-1 py-1 text-center"></td>
                             </tr>
                           </tbody>
                         </table>
                       </div>
 
-                      {/* Section 3 Pie Chart */}
-                      <div className="col-span-6 border border-black bg-white p-1.5 flex flex-col justify-between items-center">
-                        <div className="text-[11px] font-bold text-[#1e3a8a] text-center mb-1">
+                      {/* Section 3 Pie Chart (Fixed readable size, dark text, no overflow) */}
+                      <div className="col-span-6 border border-black bg-white p-1.5 flex flex-col justify-between items-center h-[142px]">
+                        <div className="text-[10.5px] font-bold text-[#1e3a8a] text-center mb-0.5">
                           Monthly Reading Qty By Gender-{year}
                         </div>
-                        <div className="h-28 w-full flex items-center justify-center">
+
+                        <div className="h-24 w-full flex items-center justify-center">
                           <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
+                            <PieChart margin={{ top: 2, right: 10, left: 10, bottom: 2 }}>
                               <Pie
                                 data={genderReading}
                                 dataKey="qty"
                                 nameKey="gender"
                                 cx="50%"
                                 cy="50%"
-                                outerRadius={42}
-                                label={({ name, percent }: any) =>
-                                  `${name} ${((percent || 0) * 100).toFixed(0)}%`
-                                }
+                                outerRadius={32}
+                                label={renderGenderPieLabel}
+                                labelLine={{ stroke: '#64748b', strokeWidth: 0.8 }}
                               >
                                 <Cell fill="#b4835a" stroke="#451a03" strokeWidth={1} />
                                 <Cell fill="#fef08a" stroke="#ca8a04" strokeWidth={1} />
@@ -505,15 +553,16 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
-                        {/* Legend matching photo */}
-                        <div className="flex items-center justify-center gap-4 text-[9px] font-bold text-slate-800 pt-0.5">
-                          <div className="flex items-center gap-1">
+
+                        {/* Legend matching photo with percentages */}
+                        <div className="flex items-center justify-center gap-4 text-[9px] font-bold text-slate-800 pt-0.5 border-t border-slate-100 w-full">
+                          <div className="flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 bg-[#b4835a] border border-black inline-block"></span>
-                            <span>Male</span>
+                            <span>Male (60%)</span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 bg-[#fef08a] border border-black inline-block"></span>
-                            <span>Female</span>
+                            <span>Female (40%)</span>
                           </div>
                         </div>
                       </div>
@@ -524,18 +573,18 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
                 {/* =========================================================================
                     RIGHT COLUMN (Cols 8-12): Section 2 (Top 10 Books Table + Bar Chart)
                    ========================================================================= */}
-                <div className="col-span-5 flex flex-col justify-between space-y-3">
+                <div className="col-span-5 flex flex-col justify-between space-y-2.5">
                   {/* 2) Top 10 Books' Title Reading Report Table */}
                   <div>
-                    <h2 className="text-[13px] font-bold text-slate-900 mb-1.5">
+                    <h2 className="text-[12.5px] font-bold text-slate-900 mb-1">
                       2) Top 10 Books' Tittle Reading Report
                     </h2>
                     <div className="overflow-hidden">
-                      <table className="w-full border-collapse border border-black text-[10.5px]">
+                      <table className="w-full border-collapse border border-black text-[10px]">
                         <thead>
                           <tr className="bg-[#fef08a] text-black font-bold">
                             <th className="border border-black px-1 py-0.5 text-center w-7">No</th>
-                            <th className="border border-black px-2 py-0.5 text-left">Book Name</th>
+                            <th className="border border-black px-2 py-0.5 text-left font-bold">Book Name</th>
                             <th className="border border-black px-1 py-0.5 text-center w-10">Qty</th>
                             <th className="border border-black px-1 py-0.5 text-center w-14">Ratio (%)</th>
                           </tr>
@@ -544,64 +593,72 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
                           {topBooks.map((row: any) => (
                             <tr key={row.no} className="hover:bg-slate-50">
                               <td className="border border-black px-1 py-0.5 text-center text-slate-800">{row.no}</td>
-                              <td className="border border-black px-2 py-0.5 text-slate-900 truncate max-w-[210px]" title={row.name}>
+                              <td
+                                className="border border-black px-2 py-0.5 text-slate-900 font-medium text-[10.5px] leading-tight truncate max-w-[210px]"
+                                title={row.name}
+                              >
                                 {row.name}
                               </td>
                               <td className="border border-black px-1 py-0.5 text-center font-bold text-slate-900">{row.qty}</td>
-                              <td className="border border-black px-1 py-0.5 text-center text-blue-700 font-medium">{row.ratio}%</td>
+                              <td className="border border-black px-1 py-0.5 text-center text-blue-700 font-semibold">{row.ratio}%</td>
                             </tr>
                           ))}
                           {/* Total Row in Yellow */}
                           <tr className="bg-[#fef08a] font-bold text-black border-t-2 border-black">
-                            <td colSpan={2} className="border border-black px-2 py-1 text-center">
+                            <td colSpan={2} className="border border-black px-2 py-1 text-center font-bold">
                               Total:
                             </td>
-                            <td className="border border-black px-1 py-1 text-center text-black">
+                            <td className="border border-black px-1 py-1 text-center font-bold text-black">
                               {totalTopBooks.toLocaleString()}
                             </td>
-                            <td className="border border-black px-1 py-1 text-center">100%</td>
+                            <td className="border border-black px-1 py-1 text-center font-bold">100%</td>
                           </tr>
                         </tbody>
                       </table>
                     </div>
                   </div>
 
-                  {/* Top 10 Books Bar Chart Box */}
+                  {/* Top 10 Books Bar Chart Box with Beautiful Khmer Rotated Labels */}
                   <div className="border border-black bg-white p-2 flex flex-col justify-between">
-                    <div className="text-[11px] font-bold text-[#1e3a8a] text-center mb-1">
+                    <div className="text-[10.5px] font-bold text-[#1e3a8a] text-center mb-0.5">
                       Top 10 Books' Tittle Reading in Library Report- {year}
                     </div>
                     <div className="h-44 w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                           data={topBooks}
-                          margin={{ top: 15, right: 10, left: -25, bottom: 42 }}
+                          margin={{ top: 14, right: 10, left: -25, bottom: 48 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                           <XAxis
                             dataKey="name"
                             interval={0}
-                            tick={({ x, y, payload }: any) => (
-                              <g transform={`translate(${x},${y})`}>
-                                <text
-                                  x={0}
-                                  y={0}
-                                  dy={10}
-                                  textAnchor="end"
-                                  fill="#475569"
-                                  fontSize={7}
-                                  transform="rotate(-40)"
-                                  className="truncate"
-                                >
-                                  {payload.value.length > 12 ? `${payload.value.slice(0, 12)}...` : payload.value}
-                                </text>
-                              </g>
-                            )}
+                            tick={({ x, y, payload }: any) => {
+                              const raw = payload.value || '';
+                              const displayVal = raw.length > 14 ? raw.substring(0, 14) + '...' : raw;
+                              return (
+                                <g transform={`translate(${x},${y})`}>
+                                  <text
+                                    x={0}
+                                    y={0}
+                                    dy={10}
+                                    textAnchor="end"
+                                    fill="#1e293b"
+                                    fontSize={8}
+                                    fontWeight="600"
+                                    transform="rotate(-45)"
+                                    style={{ fontFamily: "'Kantumruy Pro', sans-serif" }}
+                                  >
+                                    {displayVal}
+                                  </text>
+                                </g>
+                              );
+                            }}
                           />
                           <YAxis
                             domain={[0, 60]}
                             ticks={[0, 10, 20, 30, 40, 50, 60]}
-                            tick={{ fontSize: 8, fill: '#334155' }}
+                            tick={{ fontSize: 7.5, fill: '#334155' }}
                             tickLine={false}
                           />
                           <Bar
@@ -615,6 +672,7 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
                                   fontSize={8}
                                   fontWeight="bold"
                                   textAnchor="middle"
+                                  style={{ fontFamily: "'Kantumruy Pro', sans-serif" }}
                                 >
                                   {value}
                                 </text>
@@ -638,7 +696,7 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
               </div>
 
               {/* Bottom Print Footer */}
-              <div className="mt-4 pt-2 border-t border-slate-300 flex items-center justify-between text-[9px] text-slate-500">
+              <div className="mt-3 pt-1.5 border-t border-slate-300 flex items-center justify-between text-[8.5px] text-slate-500 font-khmer">
                 <div>
                   សាកលវិទ្យាល័យឌីជីថលកម្ពុជា (Digital University of Cambodia) • ប្រព័ន្ធគ្រប់គ្រងបណ្ណាល័យសាកលវិទ្យាល័យ
                 </div>
