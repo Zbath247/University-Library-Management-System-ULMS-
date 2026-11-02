@@ -18,6 +18,20 @@ export function extractAuthUser(req: Request): { id: string; username: string; f
     }
   }
 
+  // 1b. Check query param token (e.g. direct browser downloads)
+  const queryToken = req.query?.token as string | undefined;
+  if (queryToken && typeof queryToken === 'string') {
+    const verified = TokenUtils.verifyToken(queryToken);
+    if (verified) {
+      return {
+        id: verified.userId,
+        username: verified.username,
+        fullName: verified.fullName,
+        role: (verified.role as Role) || Role.STUDENT,
+      };
+    }
+  }
+
   // 2. Fallback to Express session cookie
   if (req.session && req.session.userId) {
     return {

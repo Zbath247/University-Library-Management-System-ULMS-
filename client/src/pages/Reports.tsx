@@ -68,11 +68,12 @@ export const Reports: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showDucPdfModal, setShowDucPdfModal] = useState(false);
 
-  // CSV Import State
+  // CSV Import & Export State
   const [importFile, setImportFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<any | null>(null);
   const [importing, setImporting] = useState(false);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [exportingCsv, setExportingCsv] = useState(false);
 
   const fetchReports = async () => {
     setLoading(true);
@@ -92,8 +93,34 @@ export const Reports: React.FC = () => {
     fetchReports();
   }, []);
 
-  const handleExportCsv = () => {
-    window.location.href = '/api/v1/csv/export/books';
+  const handleExportCsv = async () => {
+    try {
+      setExportingCsv(true);
+      const res = await api.get('/csv/export/books', {
+        responseType: 'blob',
+      });
+      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `duc_library_catalog_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('Error exporting CSV:', err);
+      const token = localStorage.getItem('duc_ulms_token');
+      if (token) {
+        const apiBase = import.meta.env.VITE_API_URL || '';
+        const origin = apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
+        window.open(`${origin}/api/v1/csv/export/books?token=${encodeURIComponent(token)}`, '_blank');
+      } else {
+        alert('មិនអាចទាញយកឯកសារ CSV បានទេ: សូមចូលគណនី (Login) ជា Admin ឬ Librarian ជាមុនសិន!');
+      }
+    } finally {
+      setExportingCsv(false);
+    }
   };
 
   const handlePreviewImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -633,10 +660,11 @@ export const Reports: React.FC = () => {
             <button
               type="button"
               onClick={handleExportCsv}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+              disabled={exportingCsv}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer disabled:opacity-50"
             >
-              <Download className="w-4 h-4" />
-              <span>{t.exportCatalogCsv}</span>
+              <Download className={`w-4 h-4 ${exportingCsv ? 'animate-bounce' : ''}`} />
+              <span>{exportingCsv ? 'កំពុងទាញយក...' : t.exportCatalogCsv}</span>
             </button>
           </div>
 
