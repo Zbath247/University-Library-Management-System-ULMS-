@@ -15,6 +15,9 @@ build/
 # Scanned images storage (temporary runtime files)
 server/storage/scans/*
 !server/storage/scans/.gitkeep
+server/storage/uploads/*
+!server/storage/uploads/.gitkeep
+*.traineddata
 
 # Logs and debug
 npm-debug.log*
