@@ -33,7 +33,10 @@ import {
   Globe2,
   ShieldCheck,
   RefreshCw,
+  FileText,
+  Printer,
 } from 'lucide-react';
+import { DucExecutiveReportModal } from '../components/DucExecutiveReportModal';
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -63,6 +66,7 @@ export const Reports: React.FC = () => {
   const [analytics, setAnalytics] = useState<any>(null);
   const [inventory, setInventory] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showDucPdfModal, setShowDucPdfModal] = useState(false);
 
   // CSV Import State
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -160,6 +164,15 @@ export const Reports: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
+            onClick={() => setShowDucPdfModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-900 hover:from-blue-800 hover:to-indigo-900 text-white text-xs font-bold rounded-xl shadow-md transition active:scale-95 cursor-pointer border border-blue-400/30"
+          >
+            <FileText className="w-3.5 h-3.5 text-amber-300" />
+            <span>📄 ទាញយក PDF ទម្រង់ DUC (2025)</span>
+          </button>
+
+          <button
+            type="button"
             onClick={fetchReports}
             className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
             title="ទាញយកទិន្នន័យថ្មី"
@@ -192,6 +205,15 @@ export const Reports: React.FC = () => {
         >
           <PieChartIcon className="w-4 h-4" />
           <span>📊 ក្រាហ្វិកវិភាគទិន្នន័យ (Visual Charts)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowDucPdfModal(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl transition cursor-pointer whitespace-nowrap bg-amber-500/10 text-amber-900 hover:bg-amber-500/20 border border-amber-300/40"
+        >
+          <FileText className="w-4 h-4 text-amber-600" />
+          <span>📄 របាយការណ៍ផ្លូវការ DUC (Executive PDF Sheet)</span>
         </button>
 
         <button
@@ -678,6 +700,12 @@ export const Reports: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* DUC Executive Report PDF Modal */}
+      <DucExecutiveReportModal
+        isOpen={showDucPdfModal}
+        onClose={() => setShowDucPdfModal(false)}
+      />
     </div>
   );
 };

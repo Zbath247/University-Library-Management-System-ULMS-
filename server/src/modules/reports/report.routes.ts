@@ -24,6 +24,16 @@ router.get('/inventory', async (_req: Request, res: Response) => {
   }
 });
 
+router.get('/executive-reading', async (req: Request, res: Response) => {
+  try {
+    const year = Number(req.query.year) || 2025;
+    const data = await ReportService.getExecutiveReadingReport(year);
+    res.json({ success: true, data });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
 // Detailed member circulation reports (Librarian & Admin only)
 router.use(requireRole([Role.LIBRARIAN, Role.ADMIN]));
 
