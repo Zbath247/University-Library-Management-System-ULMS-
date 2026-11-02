@@ -115,6 +115,56 @@ export const ScannerDesk: React.FC = () => {
     });
   };
 
+  // Helper: compress raw camera photo (often 5-15MB) down to clean ~150-250KB JPEG for ultra-fast upload
+  const compressImageFile = (file: File, maxDim = 1280, quality = 0.82): Promise<File> => {
+    return new Promise((resolve) => {
+      if (file.size < 200 * 1024 && file.type === 'image/jpeg') {
+        return resolve(file);
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  const cleanName = file.name.replace(/\.[^/.]+$/, '') + '.jpg';
+                  resolve(new File([blob], cleanName, { type: 'image/jpeg' }));
+                } else {
+                  resolve(file);
+                }
+              },
+              'image/jpeg',
+              quality
+            );
+          } else {
+            resolve(file);
+          }
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleCoverCaptured = async (file: File) => {
     setCoverFile(file);
     try {
@@ -140,43 +190,60 @@ export const ScannerDesk: React.FC = () => {
     if (!coverFile && !titlePageFile) return;
 
     setStep('PROCESSING');
-    setProcessingMessage(
-      skipAi
-        ? '⚡ កំពុងស្កេនស្រង់អត្ថបទ និងទិន្នន័យសៀវភៅតាមរយៈ OCR (Fast Mode)...'
-        : 'ដំណើរការ OCR កំពុងស្កេនស្រង់អត្ថបទ និងបំប្លែងទិន្នន័យតាមរយៈ AI...'
-    );
+    setProcessingMessage('⚡ កំពុងរៀបចំ និងបង្ហោះរូបភាពល្បឿនលឿន...');
     setProcessingError(null);
 
     try {
-      // 1. Create Session
-      const sessionRes = await api.post('/scan-sessions');
+      // 1. Create Session & Compress images concurrently
+      const sessionPromise = api.post('/scan-sessions');
+      const compressCoverPromise = coverFile ? compressImageFile(coverFile, 1280, 0.82) : Promise.resolve(null);
+      const compressTitlePromise = titlePageFile ? compressImageFile(titlePageFile, 1280, 0.82) : Promise.resolve(null);
+
+      const [sessionRes, compressedCover, compressedTitle] = await Promise.all([
+        sessionPromise,
+        compressCoverPromise,
+        compressTitlePromise,
+      ]);
+
       const sId = sessionRes.data?.data?.id;
       setSessionId(sId);
 
-      // 2. Upload Cover Image
-      if (coverFile) {
+      // 2. Upload Compressed Images in Parallel
+      const uploadTasks: Promise<any>[] = [];
+      if (compressedCover) {
         const formData = new FormData();
-        formData.append('image', coverFile);
+        formData.append('image', compressedCover);
         formData.append('imageType', 'COVER');
-        await api.post(`/scan-sessions/${sId}/images`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        uploadTasks.push(
+          api.post(`/scan-sessions/${sId}/images`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          })
+        );
       }
 
-      // 3. Upload Title Page Image
-      if (titlePageFile) {
+      if (compressedTitle) {
         const formData = new FormData();
-        formData.append('image', titlePageFile);
+        formData.append('image', compressedTitle);
         formData.append('imageType', 'TITLE_PAGE');
-        await api.post(`/scan-sessions/${sId}/images`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        uploadTasks.push(
+          api.post(`/scan-sessions/${sId}/images`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          })
+        );
       }
 
-      // 4. Trigger OCR (Fast or AI)
+      await Promise.all(uploadTasks);
+
+      // 3. Trigger OCR/AI
+      setProcessingMessage(
+        skipAi
+          ? '⚡ កំពុងស្កេនស្រង់អត្ថបទ និងទិន្នន័យសៀវភៅតាមរយៈ OCR (Fast Mode)...'
+          : '⚡ Gemini AI កំពុងវិភាគ និងស្រង់ទិន្នន័យសៀវភៅដោយស្វ័យប្រវត្តិ...'
+      );
+
       await api.post(`/scan-sessions/${sId}/process?skipAi=${skipAi}`);
 
-      // 5. Fetch Complete Review Data
+      // 4. Fetch Complete Review Data
       const reviewRes = await api.get(`/scan-sessions/${sId}/review`);
       const data = reviewRes.data?.data;
       setReviewData(data);

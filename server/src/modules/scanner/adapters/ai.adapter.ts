@@ -173,10 +173,10 @@ Respond ONLY with a valid JSON object matching this schema:
 
     // Try fastest, modern models first with automatic fallback
     const modelsToTry = [
-      'gemini-3.8-flash',
-      'gemini-flash-latest',
       'gemini-2.5-flash',
-      'gemini-pro-latest',
+      'gemini-flash-latest',
+      'gemini-2.5-flash-lite',
+      'gemini-1.5-flash',
     ];
     let lastError: any = null;
 
@@ -191,7 +191,7 @@ Respond ONLY with a valid JSON object matching this schema:
               temperature: 0.0,
             },
           },
-          { timeout: 20000 }
+          { timeout: 10000 }
         );
 
         const rawContent = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
