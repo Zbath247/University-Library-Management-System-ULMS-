@@ -5,6 +5,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../api/client';
 import { DUC_FACULTIES } from '../constants/academicStructure';
 import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  Cell,
+  PieChart,
+  Pie,
+} from 'recharts';
+import {
   BookOpen,
   Layers,
   CheckCircle,
@@ -121,6 +132,7 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
   const [loading, setLoading] = useState(true);
   const [inventory, setInventory] = useState<any>(null);
   const [circulation, setCirculation] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<any>(null);
 
   // Book Showcase State
   const [books, setBooks] = useState<any[]>([]);
@@ -171,22 +183,20 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [invRes, circRes] = await Promise.all([
+        const [invRes, circRes, analyticsRes] = await Promise.all([
           api.get('/reports/inventory').catch(() => ({ data: { data: null } })),
-          api.get('/reports/circulation').catch(() => ({ data: { data: null } })),
+          isStaff ? api.get('/reports/circulation').catch(() => ({ data: { data: null } })) : Promise.resolve({ data: { data: null } }),
+          api.get('/reports/analytics').catch(() => ({ data: { data: null } })),
         ]);
         setInventory(invRes.data?.data);
         setCirculation(circRes.data?.data);
+        setAnalytics(analyticsRes.data?.data);
       } finally {
         setLoading(false);
       }
     };
 
-    if (isStaff) {
-      fetchData();
-    } else {
-      setLoading(false);
-    }
+    fetchData();
   }, [isStaff]);
 
   // Fetch Books for Showcase
@@ -412,6 +422,131 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
             </div>
           </Link>
+        </div>
+      )}
+
+      {/* 📊 QUICK LIBRARY ANALYTICS & VISUAL INSIGHTS */}
+      {analytics && (
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-4 sm:p-6 shadow-sm space-y-4 animate-fadeInUp">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-xl bg-blue-50 text-duc-blue">
+                  <BarChart3 className="w-5 h-5 text-duc-blue" />
+                </span>
+                <h2 className="text-base sm:text-lg font-extrabold text-slate-800">
+                  ក្រាហ្វិកសង្ខេបទិន្នន័យបណ្ណាល័យ (Quick Library Analytics)
+                </h2>
+              </div>
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
+                ទិដ្ឋភាពទូទៅនៃកាតាឡុកសៀវភៅតាមមហាវិទ្យាល័យ និងអត្រាសៀវភៅទំនេរដែលអាចខ្ចីបាន
+              </p>
+            </div>
+
+            <Link
+              to="/reports"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-duc-blue/10 hover:bg-duc-blue hover:text-white text-duc-blue text-xs font-bold rounded-xl transition shadow-2xs self-start sm:self-auto cursor-pointer"
+            >
+              <span>📊 មើលក្រាហ្វិកវិភាគលម្អិតទាំងអស់</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-1">
+            {/* Faculty Distribution Mini Bar Chart */}
+            <div className="lg:col-span-7 bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-duc-blue" />
+                  <span>សៀវភៅតាមមហាវិទ្យាល័យ (Books by Faculty)</span>
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">សរុប {analytics.kpis?.totalBooks || 0} ចំណងជើង</span>
+              </div>
+
+              <div className="h-56 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analytics.facultyBreakdown || []} layout="vertical" margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <XAxis type="number" tick={{ fontSize: 10, fill: '#64748b' }} />
+                    <YAxis dataKey="short" type="category" tick={{ fontSize: 10, fontWeight: 'bold', fill: '#334155' }} width={55} />
+                    <RechartsTooltip
+                      content={({ active, payload }: any) => {
+                        if (active && payload && payload.length) {
+                          const item = payload[0].payload;
+                          return (
+                            <div className="bg-slate-900 text-white p-2 rounded-lg text-xs shadow-lg">
+                              <p className="font-bold text-duc-gold">{item.name}</p>
+                              <p className="text-slate-200">ចំនួន: <span className="font-bold text-white">{item.count} ចំណងជើង</span></p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar dataKey="count" radius={[0, 6, 6, 0]}>
+                      {(analytics.facultyBreakdown || []).map((entry: any, index: number) => (
+                        <Cell key={`dash-cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Copies Availability Mini Donut */}
+            <div className="lg:col-span-5 bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 flex flex-col justify-between space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span>ភាពទំនេរនៃក្បាលសៀវភៅ (Copy Status)</span>
+                </span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                  អាចខ្ចីបាន {analytics.kpis?.availableRate || 100}%
+                </span>
+              </div>
+
+              <div className="relative h-44 w-full flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={(analytics.copyStatusBreakdown || []).filter((c: any) => c.value > 0)}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={68}
+                      paddingAngle={4}
+                    >
+                      {(analytics.copyStatusBreakdown || []).filter((c: any) => c.value > 0).map((entry: any, index: number) => (
+                        <Cell key={`dash-status-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-lg font-black text-slate-800">{analytics.kpis?.totalCopies || 0}</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase">ក្បាលសរុប</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-slate-200/60">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1 text-slate-600">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span>អាចខ្ចីបាន:</span>
+                  </span>
+                  <span className="font-bold font-mono text-emerald-700">{analytics.kpis?.availableCopies ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1 text-slate-600">
+                    <span className="w-2 h-2 rounded-full bg-blue-600" />
+                    <span>កំពុងខ្ចី:</span>
+                  </span>
+                  <span className="font-bold font-mono text-blue-700">{analytics.kpis?.activeLoans ?? 0}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
