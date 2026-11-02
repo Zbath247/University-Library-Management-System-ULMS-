@@ -168,7 +168,21 @@ export const Reports: React.FC = () => {
             className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-900 hover:from-blue-800 hover:to-indigo-900 text-white text-xs font-bold rounded-xl shadow-md transition active:scale-95 cursor-pointer border border-blue-400/30"
           >
             <FileText className="w-3.5 h-3.5 text-amber-300" />
-            <span>📄 ទាញយក PDF ទម្រង់ DUC (2025)</span>
+            <span>📄 ទាញយក PDF ទម្រង់ DUC</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const apiBase = import.meta.env.VITE_API_URL || '';
+              const origin = apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
+              window.open(`${origin}/api/v1/reports/monthly-reading-word?month=តុលា&year=2026&mode=benchmark`, '_blank');
+            }}
+            className="flex items-center gap-2 px-3.5 py-2 bg-blue-800 hover:bg-blue-900 text-white text-xs font-bold rounded-xl shadow-md transition active:scale-95 cursor-pointer border border-blue-400/30"
+            title="ទាញយករបាយការណ៍ជាឯកសារ Word (.docx)"
+          >
+            <FileText className="w-3.5 h-3.5 text-blue-200" />
+            <span>📝 ទាញយក Word (.docx)</span>
           </button>
 
           <button
@@ -214,6 +228,19 @@ export const Reports: React.FC = () => {
         >
           <FileText className="w-4 h-4 text-amber-600" />
           <span>📄 របាយការណ៍ផ្លូវការ DUC (Executive PDF Sheet)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            const apiBase = import.meta.env.VITE_API_URL || '';
+            const origin = apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
+            window.open(`${origin}/api/v1/reports/monthly-reading-word?month=តុលា&year=2026&mode=benchmark`, '_blank');
+          }}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl transition cursor-pointer whitespace-nowrap bg-blue-500/10 text-blue-900 hover:bg-blue-500/20 border border-blue-300/40"
+        >
+          <FileText className="w-4 h-4 text-blue-600" />
+          <span>📝 របាយការណ៍ Word ផ្លូវការ (.docx)</span>
         </button>
 
         <button

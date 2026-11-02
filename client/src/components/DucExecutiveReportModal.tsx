@@ -190,6 +190,15 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
     }
   };
 
+  // Direct Word (.docx) Download Handler (Official 3-page DUC administrative template)
+  const handleDownloadWord = () => {
+    const month = 'តុលា';
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    const origin = apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
+    const url = `${origin}/api/v1/reports/monthly-reading-word?month=${encodeURIComponent(month)}&year=${year}&mode=${dataSource}`;
+    window.open(url, '_blank');
+  };
+
   // Browser Print Handler (Save as PDF) with Isolated Iframe for 1-Page Output
   const handlePrint = () => {
     if (!reportRef.current) {
@@ -440,6 +449,17 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
                   <span>ទាញយកជា PDF</span>
                 </>
               )}
+            </button>
+
+            {/* Direct Word (.docx) Download */}
+            <button
+              type="button"
+              onClick={handleDownloadWord}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-semibold shadow transition-all cursor-pointer border border-blue-400/30"
+              title="ទាញយកជាឯកសារ Microsoft Word (.docx)"
+            >
+              <FileText className="w-3.5 h-3.5 text-blue-200" />
+              <span>ទាញយក Word (.docx)</span>
             </button>
 
             {/* Print / Save as PDF */}
