@@ -208,6 +208,23 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
           font-family: 'Kantumruy Pro', 'Battambang', 'Siemreap', sans-serif !important;
           -webkit-font-smoothing: antialiased;
         }
+        #duc-executive-sheet table {
+          border-collapse: collapse !important;
+          border-spacing: 0 !important;
+        }
+        #duc-executive-sheet table th,
+        #duc-executive-sheet table td {
+          vertical-align: middle !important;
+          line-height: 1.4 !important;
+          padding-top: 5px !important;
+          padding-bottom: 5px !important;
+          box-sizing: border-box !important;
+        }
+        #duc-executive-sheet table th {
+          padding-top: 6px !important;
+          padding-bottom: 6px !important;
+          font-weight: 700 !important;
+        }
         @media print {
           body * {
             visibility: hidden;
@@ -386,42 +403,42 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
                       <div className="col-span-6 overflow-hidden">
                         <table className="w-full border-collapse border border-black text-[10px]">
                           <thead>
-                            <tr className="bg-[#fef08a] text-black font-bold">
-                              <th className="border border-black px-1 py-0.5 text-center w-7">No</th>
-                              <th className="border border-black px-1.5 py-0.5 text-left">Month Report</th>
-                              <th className="border border-black px-1 py-0.5 text-center w-10">Qty</th>
-                              <th className="border border-black px-1 py-0.5 text-center w-12">Ratio (%)</th>
-                              <th className="border border-black px-1 py-0.5 text-center w-16">Average/Day</th>
+                            <tr className="bg-[#fef08a] text-black font-bold h-7">
+                              <th className="border border-black px-1 py-1.5 text-center align-middle w-7">No</th>
+                              <th className="border border-black px-2 py-1.5 text-left align-middle">Month Report</th>
+                              <th className="border border-black px-1 py-1.5 text-center align-middle w-10">Qty</th>
+                              <th className="border border-black px-1 py-1.5 text-center align-middle w-12">Ratio (%)</th>
+                              <th className="border border-black px-1 py-1.5 text-center align-middle w-16">Average/Day</th>
                             </tr>
                           </thead>
                           <tbody>
                             {monthlyReading.map((row: any) => (
-                              <tr key={row.no} className="hover:bg-slate-50">
-                                <td className="border border-black px-1 py-0.5 text-center text-slate-800">{row.no}</td>
-                                <td className="border border-black px-1.5 py-0.5 text-slate-800">{row.month}</td>
-                                <td className="border border-black px-1 py-0.5 text-center font-medium text-slate-900">
+                              <tr key={row.no} className="hover:bg-slate-50 h-6">
+                                <td className="border border-black px-1 py-1 text-center align-middle text-slate-800">{row.no}</td>
+                                <td className="border border-black px-2 py-1 text-left align-middle text-slate-800">{row.month}</td>
+                                <td className="border border-black px-1 py-1 text-center align-middle font-medium text-slate-900">
                                   {row.qty > 0 ? row.qty : ''}
                                 </td>
-                                <td className="border border-black px-1 py-0.5 text-center text-blue-700 font-medium">
+                                <td className="border border-black px-1 py-1 text-center align-middle text-blue-700 font-medium">
                                   {row.ratio > 0 ? `${row.ratio}%` : ''}
                                 </td>
-                                <td className="border border-black px-1 py-0.5 text-center text-slate-700">
+                                <td className="border border-black px-1 py-1 text-center align-middle text-slate-700">
                                   {row.avgDay > 0 ? row.avgDay : ''}
                                 </td>
                               </tr>
                             ))}
                             {/* Total Row in Yellow */}
-                            <tr className="bg-[#fef08a] font-bold text-black border-t-2 border-black">
-                              <td colSpan={2} className="border border-black px-2 py-0.5 text-center font-bold">
+                            <tr className="bg-[#fef08a] font-bold text-black border-t-2 border-black h-7">
+                              <td colSpan={2} className="border border-black px-2 py-1 text-center align-middle font-bold">
                                 Total:
                               </td>
-                              <td className="border border-black px-1 py-0.5 text-center font-bold text-black">
+                              <td className="border border-black px-1 py-1 text-center align-middle font-bold text-black">
                                 {totalMonthly.toLocaleString()}
                               </td>
-                              <td className="border border-black px-1 py-0.5 text-center font-bold">
+                              <td className="border border-black px-1 py-1 text-center align-middle font-bold">
                                 {totalMonthly > 0 ? '100%' : ''}
                               </td>
-                              <td className="border border-black px-1 py-0.5 text-center"></td>
+                              <td className="border border-black px-1 py-1 text-center align-middle"></td>
                             </tr>
                           </tbody>
                         </table>
@@ -433,7 +450,7 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
                           Monthly Student Reading Qty in Library Report <br />
                           (Jan-July - {year})
                         </div>
-                        <div className="h-40 w-full">
+                        <div className="h-56 w-full">
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={lineChartData} margin={{ top: 14, right: 10, left: -25, bottom: 4 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
@@ -495,34 +512,34 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
                       <div className="col-span-6 overflow-hidden">
                         <table className="w-full border-collapse border border-black text-[10px]">
                           <thead>
-                            <tr className="bg-[#fef08a] text-black font-bold">
-                              <th className="border border-black px-1 py-1 text-center w-7">No</th>
-                              <th className="border border-black px-2 py-1 text-left">By Gender</th>
-                              <th className="border border-black px-1 py-1 text-center w-12">Qty</th>
-                              <th className="border border-black px-1 py-1 text-center w-14">Ratio (%)</th>
-                              <th className="border border-black px-1 py-1 text-center">Remark</th>
+                            <tr className="bg-[#fef08a] text-black font-bold h-7">
+                              <th className="border border-black px-1 py-1.5 text-center align-middle w-7">No</th>
+                              <th className="border border-black px-2 py-1.5 text-left align-middle font-bold">By Gender</th>
+                              <th className="border border-black px-1 py-1.5 text-center align-middle w-12">Qty</th>
+                              <th className="border border-black px-1 py-1.5 text-center align-middle w-14">Ratio (%)</th>
+                              <th className="border border-black px-1 py-1.5 text-center align-middle">Remark</th>
                             </tr>
                           </thead>
                           <tbody>
                             {genderReading.map((row: any) => (
-                              <tr key={row.no} className="hover:bg-slate-50">
-                                <td className="border border-black px-1 py-1 text-center text-slate-800">{row.no}</td>
-                                <td className="border border-black px-2 py-1 font-medium text-slate-800">{row.gender}</td>
-                                <td className="border border-black px-1 py-1 text-center font-bold text-slate-900">{row.qty}</td>
-                                <td className="border border-black px-1 py-1 text-center font-semibold text-blue-700">{row.ratio}%</td>
-                                <td className="border border-black px-1 py-1 text-center text-slate-600">{row.remark}</td>
+                              <tr key={row.no} className="hover:bg-slate-50 h-6">
+                                <td className="border border-black px-1 py-1 text-center align-middle text-slate-800">{row.no}</td>
+                                <td className="border border-black px-2 py-1 text-left align-middle font-medium text-slate-800">{row.gender}</td>
+                                <td className="border border-black px-1 py-1 text-center align-middle font-bold text-slate-900">{row.qty}</td>
+                                <td className="border border-black px-1 py-1 text-center align-middle font-semibold text-blue-700">{row.ratio}%</td>
+                                <td className="border border-black px-1 py-1 text-center align-middle text-slate-600">{row.remark}</td>
                               </tr>
                             ))}
                             {/* Total Row in Yellow */}
-                            <tr className="bg-[#fef08a] font-bold text-black border-t-2 border-black">
-                              <td colSpan={2} className="border border-black px-2 py-1 text-center font-bold">
+                            <tr className="bg-[#fef08a] font-bold text-black border-t-2 border-black h-7">
+                              <td colSpan={2} className="border border-black px-2 py-1 text-center align-middle font-bold">
                                 Total:
                               </td>
-                              <td className="border border-black px-1 py-1 text-center font-bold text-black">
+                              <td className="border border-black px-1 py-1 text-center align-middle font-bold text-black">
                                 {totalGender.toLocaleString()}
                               </td>
-                              <td className="border border-black px-1 py-1 text-center font-bold">100%</td>
-                              <td className="border border-black px-1 py-1 text-center"></td>
+                              <td className="border border-black px-1 py-1 text-center align-middle font-bold">100%</td>
+                              <td className="border border-black px-1 py-1 text-center align-middle"></td>
                             </tr>
                           </tbody>
                         </table>
@@ -582,36 +599,36 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
                     <div className="overflow-hidden">
                       <table className="w-full border-collapse border border-black text-[10px]">
                         <thead>
-                          <tr className="bg-[#fef08a] text-black font-bold">
-                            <th className="border border-black px-1 py-0.5 text-center w-7">No</th>
-                            <th className="border border-black px-2 py-0.5 text-left font-bold">Book Name</th>
-                            <th className="border border-black px-1 py-0.5 text-center w-10">Qty</th>
-                            <th className="border border-black px-1 py-0.5 text-center w-14">Ratio (%)</th>
+                          <tr className="bg-[#fef08a] text-black font-bold h-7">
+                            <th className="border border-black px-1 py-1.5 text-center align-middle w-7">No</th>
+                            <th className="border border-black px-2 py-1.5 text-left align-middle font-bold">Book Name</th>
+                            <th className="border border-black px-1 py-1.5 text-center align-middle w-10">Qty</th>
+                            <th className="border border-black px-1 py-1.5 text-center align-middle w-14">Ratio (%)</th>
                           </tr>
                         </thead>
                         <tbody>
                           {topBooks.map((row: any) => (
-                            <tr key={row.no} className="hover:bg-slate-50">
-                              <td className="border border-black px-1 py-0.5 text-center text-slate-800">{row.no}</td>
+                            <tr key={row.no} className="hover:bg-slate-50 h-6">
+                              <td className="border border-black px-1 py-1 text-center align-middle text-slate-800">{row.no}</td>
                               <td
-                                className="border border-black px-2 py-0.5 text-slate-900 font-medium text-[10.5px] leading-tight truncate max-w-[210px]"
+                                className="border border-black px-2 py-1 text-left align-middle text-slate-900 font-medium text-[10.5px] leading-normal truncate max-w-[210px]"
                                 title={row.name}
                               >
                                 {row.name}
                               </td>
-                              <td className="border border-black px-1 py-0.5 text-center font-bold text-slate-900">{row.qty}</td>
-                              <td className="border border-black px-1 py-0.5 text-center text-blue-700 font-semibold">{row.ratio}%</td>
+                              <td className="border border-black px-1 py-1 text-center align-middle font-bold text-slate-900">{row.qty}</td>
+                              <td className="border border-black px-1 py-1 text-center align-middle text-blue-700 font-semibold">{row.ratio}%</td>
                             </tr>
                           ))}
                           {/* Total Row in Yellow */}
-                          <tr className="bg-[#fef08a] font-bold text-black border-t-2 border-black">
-                            <td colSpan={2} className="border border-black px-2 py-1 text-center font-bold">
+                          <tr className="bg-[#fef08a] font-bold text-black border-t-2 border-black h-7">
+                            <td colSpan={2} className="border border-black px-2 py-1 text-center align-middle font-bold">
                               Total:
                             </td>
-                            <td className="border border-black px-1 py-1 text-center font-bold text-black">
+                            <td className="border border-black px-1 py-1 text-center align-middle font-bold text-black">
                               {totalTopBooks.toLocaleString()}
                             </td>
-                            <td className="border border-black px-1 py-1 text-center font-bold">100%</td>
+                            <td className="border border-black px-1 py-1 text-center align-middle font-bold">100%</td>
                           </tr>
                         </tbody>
                       </table>
