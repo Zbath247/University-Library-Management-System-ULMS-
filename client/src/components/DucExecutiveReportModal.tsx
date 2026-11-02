@@ -190,13 +190,109 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
     }
   };
 
-  // Browser Print Handler (Save as PDF)
+  // Browser Print Handler (Save as PDF) with Isolated Iframe for 1-Page Output
   const handlePrint = () => {
-    window.print();
+    if (!reportRef.current) {
+      window.print();
+      return;
+    }
+
+    // Create an invisible iframe for clean 1-page A4 printing
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      window.print();
+      return;
+    }
+
+    // Collect all stylesheets from main document
+    let stylesHtml = '';
+    document.querySelectorAll('style, link[rel="stylesheet"]').forEach((node) => {
+      stylesHtml += node.outerHTML;
+    });
+
+    const contentHtml = reportRef.current.outerHTML;
+
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html lang="km">
+        <head>
+          <meta charset="utf-8">
+          <title>DUC Executive Reading Report - ${year}</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Kantumruy+Pro:wght@400;500;600;700&family=Siemreap&display=swap" rel="stylesheet">
+          ${stylesHtml}
+          <style>
+            @page {
+              size: A4 landscape;
+              margin: 4mm 6mm;
+            }
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              font-family: 'Kantumruy Pro', 'Battambang', sans-serif !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            #duc-executive-sheet {
+              width: 100% !important;
+              min-width: 100% !important;
+              max-width: 100% !important;
+              margin: 0 !important;
+              padding: 3mm 4mm !important;
+              box-shadow: none !important;
+              border: none !important;
+              background: #ffffff !important;
+            }
+            table {
+              border-collapse: collapse !important;
+              border-spacing: 0 !important;
+            }
+            th, td {
+              vertical-align: middle !important;
+              line-height: 1.4 !important;
+              box-sizing: border-box !important;
+            }
+          </style>
+        </head>
+        <body>
+          ${contentHtml}
+        </body>
+      </html>
+    `);
+    doc.close();
+
+    // Trigger print after iframe renders
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (e) {
+        console.error('Iframe print error:', e);
+        window.print();
+      } finally {
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 2000);
+      }
+    }, 400);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto print:p-0 print:bg-white print:static">
+    <div className="duc-modal-container fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto print:p-0 print:bg-white print:static">
       {/* Global Style for Printing and Beautiful Khmer Typography */}
       <style>{`
         @page {
@@ -226,16 +322,33 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
           font-weight: 700 !important;
         }
         @media print {
-          body * {
-            visibility: hidden;
+          /* Fallback native print styling */
+          nav, aside, header, footer, .print\\:hidden {
+            display: none !important;
           }
-          #duc-executive-sheet, #duc-executive-sheet * {
-            visibility: visible;
+          body, html {
+            background: #ffffff !important;
+            overflow: visible !important;
+            height: auto !important;
+          }
+          .duc-modal-container {
+            position: static !important;
+            overflow: visible !important;
+            background: #ffffff !important;
+            padding: 0 !important;
+            display: block !important;
+          }
+          .max-h-\\[96vh\\] {
+            max-height: none !important;
+            overflow: visible !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          .overflow-auto, .overflow-y-auto {
+            overflow: visible !important;
           }
           #duc-executive-sheet {
-            position: absolute;
-            left: 0;
-            top: 0;
+            position: static !important;
             width: 100% !important;
             min-width: 100% !important;
             margin: 0 !important;
