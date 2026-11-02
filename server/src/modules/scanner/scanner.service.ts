@@ -366,19 +366,41 @@ export class ScannerService {
     const openLibData = openLibCandidate ? JSON.parse(openLibCandidate.fieldValue) : null;
     const extMatch = googleData || openLibData;
 
-    const finalTitle = title || extMatch?.title || '';
-    const isKhmer = /[\u1780-\u17FF]/.test(finalTitle);
-
-    // AI confidence check
+    // AI confidence check: Gemini AI has confidence >= 95. Heuristic fallback has confidence 70.
     const aiCandidate = session.candidates.find((c) => c.source === CandidateSource.AI_NORMALIZED);
-    const isAiResult = !!(aiCandidate && Number(aiCandidate.confidence) >= 90);
+    const isAiResult = !!(aiCandidate && Number(aiCandidate.confidence) >= 95 && aiCandidate.fieldValue !== 'Unknown Title');
+
+    // If an official ISBN match exists and local extraction was heuristic fallback,
+    // prioritize the official verified publisher/author/title metadata!
+    const effectiveTitle = isAiResult ? (title || extMatch?.title || '') : (extMatch?.title || title || '');
+    const isKhmer = /[\u1780-\u17FF]/.test(effectiveTitle);
+
+    const effectiveEnglish = isAiResult
+      ? (titleEnglishCandidate || (!isKhmer ? effectiveTitle : (extMatch?.title || '')))
+      : (extMatch?.title || titleEnglishCandidate || (!isKhmer ? effectiveTitle : ''));
+
+    const effectiveKhmer = isAiResult
+      ? (titleKhmerCandidate || (isKhmer ? effectiveTitle : ''))
+      : (titleKhmerCandidate || (isKhmer ? effectiveTitle : ''));
+
+    const effectiveAuthors = (isAiResult && authors.length > 0)
+      ? authors
+      : (extMatch?.authors?.length ? extMatch.authors : authors);
+
+    const effectivePublisher = isAiResult
+      ? (publisher || extMatch?.publisher || null)
+      : (extMatch?.publisher || publisher || null);
+
+    const effectiveYear = isAiResult
+      ? (publicationYear || extMatch?.publicationYear || null)
+      : (extMatch?.publicationYear || publicationYear || null);
 
     // Duplicate detection
     const duplicateCheck = await DuplicateService.findPotentialDuplicates({
       isbn10: isbn10 || extMatch?.isbn10,
       isbn13: isbn13 || extMatch?.isbn13,
-      title: finalTitle,
-      authors: authors.length > 0 ? authors : (extMatch?.authors || []),
+      title: effectiveTitle,
+      authors: effectiveAuthors,
     });
 
     return {
@@ -386,15 +408,15 @@ export class ScannerService {
       images: session.images,
       extractionMethod: extMatch ? 'ISBN_MATCH' : (isAiResult ? 'GEMINI_AI' : 'LOCAL_OCR'),
       extracted: {
-        title: finalTitle,
-        titleKhmer: titleKhmerCandidate || (isKhmer ? finalTitle : (extMatch?.title || '')),
-        titleEnglish: titleEnglishCandidate || (!isKhmer ? finalTitle : (extMatch?.title || '')),
+        title: effectiveTitle,
+        titleKhmer: effectiveKhmer,
+        titleEnglish: effectiveEnglish,
         subtitle: subtitle || extMatch?.subtitle || null,
-        authors: authors.length > 0 ? authors : (extMatch?.authors || []),
+        authors: effectiveAuthors,
         isbn10: isbn10 || extMatch?.isbn10 || null,
         isbn13: isbn13 || extMatch?.isbn13 || null,
-        publisher: publisher || extMatch?.publisher || null,
-        publicationYear: publicationYear || extMatch?.publicationYear || null,
+        publisher: effectivePublisher,
+        publicationYear: effectiveYear,
         edition: edition || extMatch?.edition || null,
         language: language || (isKhmer ? 'km' : 'en'),
         description: description || extMatch?.description || null,

@@ -32,15 +32,33 @@ export class RegexFallbackNormalizer implements IAiNormalizer {
     const yearMatch = ocrText.match(/(?:copyright|©|\(c\)|published|year|ឆ្នាំ|បោះពុម្ព)?\s*(19\d{2}|20\d{2})/i);
     const publicationYear = yearMatch ? parseInt(yearMatch[1], 10) : null;
 
+    // Helper: identify comma-separated multi-name author lines (e.g. "Thomas H. Cormen, Charles E. Leiserson...")
+    const isMultiNameAuthorLine = (l: string) => {
+      const parts = l.split(/[,;&]|\band\b|\bនិង\b/).map((p) => p.trim());
+      if (parts.length >= 2) {
+        const namePattern = /^[A-Z][a-z]+(\s+[A-Z]\.?)?\s+[A-Z][a-z]+$|^[\u1780-\u17FF\s]{3,}$/;
+        const matchCount = parts.filter((p) => namePattern.test(p)).length;
+        return matchCount >= 2;
+      }
+      return false;
+    };
+
     // Filter out metadata, noise lines, and author prefixes to extract clean title candidates
-    const nonTitleRegex = /isbn|issn|copyright|©|\(c\)|press|edition|published|បោះពុម្ព|page|volume|all rights|duc|table of contents|http|www|\.com|អន[េប][បដ]?[ណគត័]|បណ្ឌិត|អនុបណ្ឌិត|សាស្ត្រាចារ្យ|msc|phd|prof|dr|author|written by|by\s+|editions\s+/i;
-    
-    // Filter lines: must be at least 4 meaningful characters, not just punctuation or 1-2 broken syllables
-    const titleCandidates = rawLines.filter((l) => {
-      if (nonTitleRegex.test(l)) return false;
-      const clean = l.replace(/[^a-zA-Z\u1780-\u17FF0-9\s]/g, '').trim();
-      return clean.length >= 4 && clean.length <= 120;
-    });
+    const nonTitleRegex = /isbn|issn|copyright|©|\(c\)|press|published|បោះពុម្ព|page|volume|all rights|duc|table of contents|http|www|\.com|អន[េប][បដ]?[ណគត័]|បណ្ឌិត|អនុបណ្ឌិត|សាស្ត្រាចារ្យ|msc|phd|prof|dr|author|written by|by\s+|editions\s+/i;
+
+    // Clean edition suffixes (e.g. "Fourth Edition", "4th edition") without discarding the book title
+    const cleanTitleLine = (l: string) =>
+      l.replace(/(?:,|\s*[-–]\s*)?(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\d+(?:st|nd|rd|th)?)\s+edition/gi, '').trim();
+
+    const titleCandidates = rawLines
+      .map(cleanTitleLine)
+      .filter((l) => {
+        if (!l || l.length < 4 || l.length > 120) return false;
+        if (nonTitleRegex.test(l)) return false;
+        if (isMultiNameAuthorLine(l)) return false;
+        const clean = l.replace(/[^a-zA-Z\u1780-\u17FF0-9\s]/g, '').trim();
+        return clean.length >= 4;
+      });
 
     // Differentiate Khmer and English titles
     const khmerLine = titleCandidates.find((l) => /[\u1780-\u17FF]{4,}/.test(l));
@@ -49,7 +67,7 @@ export class RegexFallbackNormalizer implements IAiNormalizer {
     const title = khmerLine || englishLine || titleCandidates[0] || '';
     const subtitle = titleCandidates[1] && titleCandidates[1] !== title && titleCandidates[1].length < 80 ? titleCandidates[1] : null;
 
-    // Authors extraction heuristic (Khmer titles + English prefixes)
+    // Authors extraction heuristic (Khmer titles + English prefixes + comma-separated lines)
     let authors: string[] = [];
     const authorPattern = /(?:by\s+|author(?:s)?:?|written by:?|និពន្ធដោយ:?|រៀបរៀងដោយ:?|ចងក្រងដោយ:?|អន[េប][បដ]?[ណគត័][ៈ:]?|អនុបណ្ឌិត|បណ្ឌិត|សាស្ត្រាចារ្យ|msc\.|phd|dr\.)\s*([^\n\r,;]+)/gi;
     let authorMatch;
@@ -60,7 +78,15 @@ export class RegexFallbackNormalizer implements IAiNormalizer {
       }
     }
 
-    // Check author lines for multi-names (e.g. ជី គឹមអ៊ី, តៃ សំអាង / Chi Kim Y, Tai Samnang)
+    // Check author lines for multi-names (e.g. ជី គឹមអ៊ី, តៃ សំអាង / Thomas H. Cormen, Charles E. Leiserson...)
+    const multiAuthorLine = rawLines.find(isMultiNameAuthorLine);
+    if (multiAuthorLine && authors.length === 0) {
+      authors = multiAuthorLine
+        .split(/[,;&]|\band\b|\bនិង\b/)
+        .map((a) => a.trim())
+        .filter((a) => a.length >= 2);
+    }
+
     const authorLine = rawLines.find((l) => /by\s+|author|authors|និពន្ធ|រៀបរៀង|ចងក្រង|អន[េប][បដ]?[ណគត័]|អនុបណ្ឌិត|msc/i.test(l));
     if (authorLine && authors.length === 0) {
       const cleaned = authorLine
@@ -173,10 +199,9 @@ Respond ONLY with a valid JSON object matching this schema:
 
     // Try fastest, modern models first with automatic fallback
     const modelsToTry = [
-      'gemini-flash-latest',
-      'gemini-1.5-flash',
-      'gemini-2.0-flash',
-      'gemini-2.5-flash',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-3.1-flash-lite',
     ];
     let lastError: any = null;
 
@@ -191,7 +216,7 @@ Respond ONLY with a valid JSON object matching this schema:
               temperature: 0.0,
             },
           },
-          { timeout: 15000 }
+          { timeout: 5000 }
         );
 
         const rawContent = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
