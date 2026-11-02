@@ -186,7 +186,7 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
         const [invRes, circRes, analyticsRes] = await Promise.all([
           api.get('/reports/inventory').catch(() => ({ data: { data: null } })),
           isStaff ? api.get('/reports/circulation').catch(() => ({ data: { data: null } })) : Promise.resolve({ data: { data: null } }),
-          api.get('/reports/analytics').catch(() => ({ data: { data: null } })),
+          isStaff ? api.get('/reports/analytics').catch(() => ({ data: { data: null } })) : Promise.resolve({ data: { data: null } }),
         ]);
         setInventory(invRes.data?.data);
         setCirculation(circRes.data?.data);
@@ -359,8 +359,8 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
 
 
 
-      {/* 📊 QUICK LIBRARY ANALYTICS & VISUAL INSIGHTS */}
-      {analytics && (
+      {/* 📊 QUICK LIBRARY ANALYTICS & VISUAL INSIGHTS (STAFF ONLY) */}
+      {isStaff && analytics && (
         <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-4 sm:p-6 shadow-sm space-y-4 animate-fadeInUp">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
