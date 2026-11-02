@@ -14,17 +14,32 @@ import {
   ImageRun,
   ShadingType,
   VerticalAlign,
+  IFontAttributesProperties,
 } from 'docx';
 import prisma from '../../db/prisma';
 
 export class WordReportService {
   /**
    * Generates official DUC Monthly Library Report Word (.docx) document
-   * Exactly matching the official Cambodian/DUC administrative template.
+   * Formatted strictly with official Cambodian administrative typography:
+   * - Headings & Titles: Khmer OS Muol Light
+   * - Body, Tables & Signatures: Khmer OS Battambang
+   * Using OpenXML Complex Script (cs) attributes for flawless rendering in Microsoft Word.
    */
   static async generateMonthlyReadingDocx(monthName: string = 'តុលា', year: number = 2026, mode: 'benchmark' | 'live' = 'benchmark'): Promise<Buffer> {
-    const KHMER_MUOL = 'Khmer OS Muol Light';
-    const KHMER_BODY = 'Khmer OS Siemreap';
+    const FONT_MUOL: IFontAttributesProperties = {
+      ascii: 'Khmer OS Muol Light',
+      cs: 'Khmer OS Muol Light',
+      hAnsi: 'Khmer OS Muol Light',
+      hint: 'cs',
+    };
+
+    const FONT_BATTAMBANG: IFontAttributesProperties = {
+      ascii: 'Khmer OS Battambang',
+      cs: 'Khmer OS Battambang',
+      hAnsi: 'Khmer OS Battambang',
+      hint: 'cs',
+    };
 
     // Standard borders for table cells
     const cellBorders = {
@@ -52,12 +67,15 @@ export class WordReportService {
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
+            spacing: { line: 260, lineRule: 'auto' },
             children: [
               new TextRun({
                 text,
                 bold: true,
-                font: KHMER_MUOL,
-                size: 19, // ~9.5pt
+                boldComplexScript: true,
+                font: FONT_MUOL,
+                size: 20, // 10pt
+                sizeComplexScript: 20,
                 color: '000000',
               }),
             ],
@@ -83,12 +101,15 @@ export class WordReportService {
         children: [
           new Paragraph({
             alignment,
+            spacing: { line: 260, lineRule: 'auto' },
             children: [
               new TextRun({
                 text,
                 bold: isBold,
-                font: KHMER_BODY,
+                boldComplexScript: isBold,
+                font: FONT_BATTAMBANG,
                 size: 20, // 10pt
+                sizeComplexScript: 20,
                 color: '000000',
               }),
             ],
@@ -113,7 +134,7 @@ export class WordReportService {
       console.warn('Could not load logo for Word report:', e);
     }
 
-    // Benchmark data directly matching the user's uploaded official document
+    // Benchmark data directly matching the official document
     const benchmarkStudents = [
       { no: 1, name: 'សុខ ដាវីដ', gender: 'ប្រុស', major: 'វិទ្យាសាស្ត្រកុំព្យូទ័រ' },
       { no: 2, name: 'ចាន់ ណាវី', gender: 'ស្រី', major: 'ព័ត៌មានវិទ្យា' },
@@ -226,6 +247,7 @@ export class WordReportService {
       borders: noBorders,
       rows: [
         new TableRow({
+          cantSplit: true,
           children: [
             // Left Column
             new TableCell({
@@ -236,29 +258,36 @@ export class WordReportService {
                   ? [
                       new Paragraph({
                         alignment: AlignmentType.LEFT,
+                        spacing: { line: 260, lineRule: 'auto', after: 60 },
                         children: [logoImageRun],
                       }),
                     ]
                   : []),
                 new Paragraph({
                   alignment: AlignmentType.LEFT,
+                  spacing: { line: 260, lineRule: 'auto', after: 40 },
                   children: [
                     new TextRun({
                       text: 'សាកលវិទ្យាល័យឌីជីថលកម្ពុជា',
-                      font: KHMER_MUOL,
+                      font: FONT_MUOL,
                       size: 21, // ~10.5pt
+                      sizeComplexScript: 21,
                       bold: true,
+                      boldComplexScript: true,
                     }),
                   ],
                 }),
                 new Paragraph({
                   alignment: AlignmentType.LEFT,
+                  spacing: { line: 260, lineRule: 'auto' },
                   children: [
                     new TextRun({
                       text: 'បណ្ណាល័យសិក្សា',
-                      font: KHMER_BODY,
+                      font: FONT_BATTAMBANG,
                       size: 20, // 10pt
+                      sizeComplexScript: 20,
                       bold: true,
+                      boldComplexScript: true,
                     }),
                   ],
                 }),
@@ -271,23 +300,29 @@ export class WordReportService {
               children: [
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
+                  spacing: { line: 260, lineRule: 'auto', after: 40 },
                   children: [
                     new TextRun({
                       text: 'ព្រះរាជាណាចក្រកម្ពុជា',
-                      font: KHMER_MUOL,
+                      font: FONT_MUOL,
                       size: 23, // ~11.5pt
+                      sizeComplexScript: 23,
                       bold: true,
+                      boldComplexScript: true,
                     }),
                   ],
                 }),
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
+                  spacing: { line: 260, lineRule: 'auto', after: 60 },
                   children: [
                     new TextRun({
                       text: 'ជាតិ សាសនា ព្រះមហាក្សត្រ',
-                      font: KHMER_MUOL,
+                      font: FONT_MUOL,
                       size: 23, // ~11.5pt
+                      sizeComplexScript: 23,
                       bold: true,
+                      boldComplexScript: true,
                     }),
                   ],
                 }),
@@ -297,6 +332,7 @@ export class WordReportService {
                     new TextRun({
                       text: '🙢 🙠 🙢 🙠 🙢',
                       size: 16,
+                      sizeComplexScript: 16,
                       color: '475569',
                     }),
                   ],
@@ -313,25 +349,30 @@ export class WordReportService {
       new Paragraph({ spacing: { before: 200, after: 100 } }),
       new Paragraph({
         alignment: AlignmentType.CENTER,
+        spacing: { line: 280, lineRule: 'auto', after: 60 },
         children: [
           new TextRun({
             text: 'របាយការណ៍',
-            font: KHMER_MUOL,
+            font: FONT_MUOL,
             size: 28, // 14pt
+            sizeComplexScript: 28,
             bold: true,
+            boldComplexScript: true,
             color: '000000',
           }),
         ],
       }),
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { after: 250 },
+        spacing: { line: 280, lineRule: 'auto', after: 250 },
         children: [
           new TextRun({
             text: `ស្តីពីការអានសៀវភៅប្រចាំខែ${monthName} ឆ្នាំ${year}`,
-            font: KHMER_MUOL,
+            font: FONT_MUOL,
             size: 23, // 11.5pt
+            sizeComplexScript: 23,
             bold: true,
+            boldComplexScript: true,
             color: '000000',
           }),
         ],
@@ -340,13 +381,15 @@ export class WordReportService {
 
     // Section I: Summary Table
     const sectionIHeading = new Paragraph({
-      spacing: { before: 150, after: 100 },
+      spacing: { before: 150, after: 100, line: 260, lineRule: 'auto' },
       children: [
         new TextRun({
           text: `I. របាយការណ៍សរុបអ្នកអានសៀវភៅប្រចាំខែ${monthName}`,
-          font: KHMER_MUOL,
+          font: FONT_MUOL,
           size: 21,
+          sizeComplexScript: 21,
           bold: true,
+          boldComplexScript: true,
         }),
       ],
     });
@@ -356,6 +399,8 @@ export class WordReportService {
       alignment: AlignmentType.CENTER,
       rows: [
         new TableRow({
+          cantSplit: true,
+          tableHeader: true,
           children: [
             makeHeaderCell('ល.រ', 10),
             makeHeaderCell('ភេទ', 30),
@@ -364,6 +409,7 @@ export class WordReportService {
           ],
         }),
         new TableRow({
+          cantSplit: true,
           children: [
             makeDataCell('1', 10),
             makeDataCell('ប្រុស', 30, AlignmentType.CENTER),
@@ -372,6 +418,7 @@ export class WordReportService {
           ],
         }),
         new TableRow({
+          cantSplit: true,
           children: [
             makeDataCell('2', 10),
             makeDataCell('ស្រី', 30, AlignmentType.CENTER),
@@ -380,6 +427,7 @@ export class WordReportService {
           ],
         }),
         new TableRow({
+          cantSplit: true,
           children: [
             new TableCell({
               columnSpan: 2,
@@ -390,7 +438,17 @@ export class WordReportService {
               children: [
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
-                  children: [new TextRun({ text: 'សរុប', font: KHMER_MUOL, size: 20, bold: true })],
+                  spacing: { line: 260, lineRule: 'auto' },
+                  children: [
+                    new TextRun({
+                      text: 'សរុប',
+                      font: FONT_MUOL,
+                      size: 20,
+                      sizeComplexScript: 20,
+                      bold: true,
+                      boldComplexScript: true,
+                    }),
+                  ],
                 }),
               ],
             }),
@@ -403,19 +461,23 @@ export class WordReportService {
 
     // Section II: List of Students
     const sectionIIHeading = new Paragraph({
-      spacing: { before: 250, after: 100 },
+      spacing: { before: 250, after: 100, line: 260, lineRule: 'auto' },
       children: [
         new TextRun({
           text: `II. ឈ្មោះសិស្ស និងបុគ្គលិកដែលអានសៀវភៅប្រចាំខែ${monthName}`,
-          font: KHMER_MUOL,
+          font: FONT_MUOL,
           size: 21,
+          sizeComplexScript: 21,
           bold: true,
+          boldComplexScript: true,
         }),
       ],
     });
 
     const tableIIRows = [
       new TableRow({
+        cantSplit: true,
+        tableHeader: true,
         children: [
           makeHeaderCell('ល.រ', 8),
           makeHeaderCell('ឈ្មោះ', 30),
@@ -427,6 +489,7 @@ export class WordReportService {
       ...studentsList.map(
         (st) =>
           new TableRow({
+            cantSplit: true,
             children: [
               makeDataCell(String(st.no), 8),
               makeDataCell(st.name, 30, AlignmentType.LEFT, true),
@@ -446,13 +509,15 @@ export class WordReportService {
 
     // Section III: Borrowed and Read outside Library Summary
     const sectionIIIHeading = new Paragraph({
-      spacing: { before: 250, after: 100 },
+      spacing: { before: 250, after: 100, line: 260, lineRule: 'auto' },
       children: [
         new TextRun({
           text: 'III. ចំនួនសៀវភៅ ដែលបានខ្ចី និងអាននៅក្រៅបណ្ណាល័យ',
-          font: KHMER_MUOL,
+          font: FONT_MUOL,
           size: 21,
+          sizeComplexScript: 21,
           bold: true,
+          boldComplexScript: true,
         }),
       ],
     });
@@ -462,14 +527,17 @@ export class WordReportService {
       alignment: AlignmentType.CENTER,
       rows: [
         new TableRow({
+          cantSplit: true,
+          tableHeader: true,
           children: [
             makeHeaderCell('ល.រ', 10),
-            makeHeaderCell('ចំនួនសៀវភៅ', 45),
+            makeHeaderCell('ប្រភេទ', 45),
             makeHeaderCell('ចំនួនសៀវភៅ', 25),
             makeHeaderCell('ផ្សេងៗ', 20),
           ],
         }),
         new TableRow({
+          cantSplit: true,
           children: [
             makeDataCell('1', 10),
             makeDataCell('ចំនួនសៀវភៅដែលបានខ្ចី', 45, AlignmentType.LEFT),
@@ -478,6 +546,7 @@ export class WordReportService {
           ],
         }),
         new TableRow({
+          cantSplit: true,
           children: [
             makeDataCell('2', 10),
             makeDataCell('ចំនួនសៀវភៅដែលបានសង', 45, AlignmentType.LEFT),
@@ -487,6 +556,7 @@ export class WordReportService {
         }),
         // Highlighted Unreturned Books Row (Pink/Red)
         new TableRow({
+          cantSplit: true,
           children: [
             new TableCell({
               columnSpan: 2,
@@ -498,7 +568,17 @@ export class WordReportService {
               children: [
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
-                  children: [new TextRun({ text: 'សៀវភៅមិនទាន់សង', font: KHMER_MUOL, size: 20, bold: true })],
+                  spacing: { line: 260, lineRule: 'auto' },
+                  children: [
+                    new TextRun({
+                      text: 'សៀវភៅមិនទាន់សង',
+                      font: FONT_MUOL,
+                      size: 20,
+                      sizeComplexScript: 20,
+                      bold: true,
+                      boldComplexScript: true,
+                    }),
+                  ],
                 }),
               ],
             }),
@@ -511,19 +591,23 @@ export class WordReportService {
 
     // Section IV: Borrowed Book Names Details
     const sectionIVHeading = new Paragraph({
-      spacing: { before: 250, after: 100 },
+      spacing: { before: 250, after: 100, line: 260, lineRule: 'auto' },
       children: [
         new TextRun({
           text: 'IV. ឈ្មោះសៀវភៅ ដែលបានខ្ចីនៅក្រៅបណ្ណាល័យ',
-          font: KHMER_MUOL,
+          font: FONT_MUOL,
           size: 21,
+          sizeComplexScript: 21,
           bold: true,
+          boldComplexScript: true,
         }),
       ],
     });
 
     const tableIVRows = [
       new TableRow({
+        cantSplit: true,
+        tableHeader: true,
         children: [
           makeHeaderCell('ល.រ', 8),
           makeHeaderCell('ឈ្មោះ', 28),
@@ -536,6 +620,7 @@ export class WordReportService {
       ...loanList.map(
         (ln) =>
           new TableRow({
+            cantSplit: true,
             children: [
               makeDataCell(String(ln.no), 8),
               makeDataCell(ln.name, 28, AlignmentType.LEFT, true),
@@ -554,12 +639,13 @@ export class WordReportService {
       rows: tableIVRows,
     });
 
-    // Signatures and Dates (Page 3)
+    // Signatures and Dates
     const signatureTable = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       borders: noBorders,
       rows: [
         new TableRow({
+          cantSplit: true,
           children: [
             // Left: Reviewer
             new TableCell({
@@ -569,23 +655,29 @@ export class WordReportService {
                 new Paragraph({ spacing: { before: 300 } }),
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
+                  spacing: { line: 260, lineRule: 'auto', after: 40 },
                   children: [
                     new TextRun({
                       text: 'បានឃើញ និងឯកភាព',
-                      font: KHMER_BODY,
+                      font: FONT_BATTAMBANG,
                       size: 20,
+                      sizeComplexScript: 20,
                       bold: true,
+                      boldComplexScript: true,
                     }),
                   ],
                 }),
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
+                  spacing: { line: 260, lineRule: 'auto', after: 700 },
                   children: [
                     new TextRun({
                       text: 'អ្នកត្រួតពិនិត្យ',
-                      font: KHMER_MUOL,
+                      font: FONT_MUOL,
                       size: 21,
+                      sizeComplexScript: 21,
                       bold: true,
+                      boldComplexScript: true,
                     }),
                   ],
                 }),
@@ -599,45 +691,55 @@ export class WordReportService {
                 new Paragraph({ spacing: { before: 300 } }),
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
+                  spacing: { line: 260, lineRule: 'auto', after: 40 },
                   children: [
                     new TextRun({
                       text: `ថ្ងៃពុធ ១២កើត ខែកត្តិក ឆ្នាំរោង ឆស័ក ព.ស. ២៥៦៩`,
-                      font: KHMER_BODY,
+                      font: FONT_BATTAMBANG,
                       size: 19,
+                      sizeComplexScript: 19,
                       italics: true,
+                      italicsComplexScript: true,
                     }),
                   ],
                 }),
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
+                  spacing: { line: 260, lineRule: 'auto', after: 60 },
                   children: [
                     new TextRun({
                       text: `រាជធានីភ្នំពេញ ថ្ងៃទី០៤ ខែ${monthName} ឆ្នាំ${year}`,
-                      font: KHMER_BODY,
+                      font: FONT_BATTAMBANG,
                       size: 20,
+                      sizeComplexScript: 20,
                     }),
                   ],
                 }),
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
-                  spacing: { after: 700 }, // Space for physical signature
+                  spacing: { line: 260, lineRule: 'auto', after: 700 }, // Space for physical signature
                   children: [
                     new TextRun({
                       text: 'អ្នកគ្រប់គ្រងបណ្ណាល័យ',
-                      font: KHMER_MUOL,
+                      font: FONT_MUOL,
                       size: 21,
+                      sizeComplexScript: 21,
                       bold: true,
+                      boldComplexScript: true,
                     }),
                   ],
                 }),
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
+                  spacing: { line: 260, lineRule: 'auto' },
                   children: [
                     new TextRun({
                       text: 'សែម សុខុម',
-                      font: KHMER_MUOL,
+                      font: FONT_MUOL,
                       size: 22,
+                      sizeComplexScript: 22,
                       bold: true,
+                      boldComplexScript: true,
                     }),
                   ],
                 }),
@@ -648,8 +750,19 @@ export class WordReportService {
       ],
     });
 
-    // Compile into final Word Document
+    // Compile into final Word Document with document-wide Battambang default
     const doc = new Document({
+      styles: {
+        default: {
+          document: {
+            run: {
+              font: FONT_BATTAMBANG,
+              size: 20,
+              sizeComplexScript: 20,
+            },
+          },
+        },
+      },
       sections: [
         {
           properties: {
