@@ -136,8 +136,18 @@ export class ScannerService {
       if (!options?.skipAi && config.GEMINI_API_KEY) {
         try {
           const geminiNormalizer = new GeminiAiNormalizer(config.GEMINI_API_KEY);
-          aiResult = await geminiNormalizer.normalizeMetadata('', imageBuffers);
-          if (aiResult && aiResult.metadata && (aiResult.metadata.titleKhmer || aiResult.metadata.titleEnglish || aiResult.metadata.title)) {
+          const visionResult = await geminiNormalizer.normalizeMetadata('', imageBuffers);
+          const hasValidTitle =
+            visionResult &&
+            visionResult.metadata &&
+            (
+              (typeof visionResult.metadata.titleKhmer === 'string' && visionResult.metadata.titleKhmer.trim().length > 0) ||
+              (typeof visionResult.metadata.titleEnglish === 'string' && visionResult.metadata.titleEnglish.trim().length > 0) ||
+              (typeof visionResult.metadata.title === 'string' && visionResult.metadata.title.trim().length > 0 && visionResult.metadata.title !== 'Unknown Title')
+            );
+
+          if (hasValidTitle) {
+            aiResult = visionResult;
             combinedOcrText = `--- GEMINI VISION AI EXTRACTION ---\n` +
               `ចំណងជើងខ្មែរ (Khmer Title): ${aiResult.metadata.titleKhmer || '-'}\n` +
               `ចំណងជើងអង់គ្លេស (English Title): ${aiResult.metadata.titleEnglish || '-'}\n` +
@@ -147,6 +157,9 @@ export class ScannerService {
               `ISBN-10: ${aiResult.metadata.isbn10 || '-'}\n` +
               `ឆ្នាំបោះពុម្ព (Year): ${aiResult.metadata.publicationYear || '-'}\n`;
             totalConfidence = aiResult.confidence;
+          } else {
+            console.warn('Gemini Vision returned empty or missing title metadata, falling back to Local OCR');
+            aiResult = null;
           }
         } catch (aiErr) {
           console.warn('Direct Gemini Vision failed, will fallback to Local OCR:', aiErr);

@@ -173,10 +173,10 @@ Respond ONLY with a valid JSON object matching this schema:
 
     // Try fastest, modern models first with automatic fallback
     const modelsToTry = [
-      'gemini-2.5-flash',
       'gemini-flash-latest',
-      'gemini-2.5-flash-lite',
       'gemini-1.5-flash',
+      'gemini-2.0-flash',
+      'gemini-2.5-flash',
     ];
     let lastError: any = null;
 
@@ -191,7 +191,7 @@ Respond ONLY with a valid JSON object matching this schema:
               temperature: 0.0,
             },
           },
-          { timeout: 10000 }
+          { timeout: 15000 }
         );
 
         const rawContent = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -199,13 +199,32 @@ Respond ONLY with a valid JSON object matching this schema:
           throw new Error(`Empty response from model ${model}`);
         }
 
-        const parsedJson = JSON.parse(rawContent);
-        if (!parsedJson.title) {
-          parsedJson.title = parsedJson.titleKhmer || parsedJson.titleEnglish || 'Unknown Title';
+        let cleanJson = rawContent.trim();
+        if (cleanJson.startsWith('```')) {
+          cleanJson = cleanJson.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+        }
+
+        const parsedJson = JSON.parse(cleanJson);
+
+        if (typeof parsedJson.publicationYear === 'string') {
+          const num = parseInt(parsedJson.publicationYear.replace(/\D/g, ''), 10);
+          parsedJson.publicationYear = isNaN(num) ? null : num;
+        }
+        if (typeof parsedJson.isbn13 === 'number') {
+          parsedJson.isbn13 = String(parsedJson.isbn13);
+        }
+        if (typeof parsedJson.isbn10 === 'number') {
+          parsedJson.isbn10 = String(parsedJson.isbn10);
         }
         if (!Array.isArray(parsedJson.authors)) {
-          parsedJson.authors = parsedJson.authors ? [parsedJson.authors] : [];
+          parsedJson.authors = parsedJson.authors ? [String(parsedJson.authors)] : [];
+        } else {
+          parsedJson.authors = parsedJson.authors.map((a: any) => String(a).trim()).filter(Boolean);
         }
+        if (!parsedJson.title || typeof parsedJson.title !== 'string' || parsedJson.title.trim() === '') {
+          parsedJson.title = parsedJson.titleKhmer || parsedJson.titleEnglish || '';
+        }
+
         const validated = extractedBookMetadataSchema.parse(parsedJson);
 
         return {
@@ -219,7 +238,10 @@ Respond ONLY with a valid JSON object matching this schema:
       }
     }
 
-    console.warn('All Gemini AI models failed or timed out, falling back to regex parser:', lastError?.message || lastError);
+    console.warn('All Gemini AI models failed or timed out:', lastError?.message || lastError);
+    if (imageBuffers && imageBuffers.length > 0 && (!ocrText || ocrText.trim() === '')) {
+      throw new Error(`GEMINI_VISION_FAILED: ${lastError?.message || 'Could not extract metadata from images'}`);
+    }
     const fallback = new RegexFallbackNormalizer();
     return fallback.normalizeMetadata(ocrText);
   }
