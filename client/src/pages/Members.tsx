@@ -191,27 +191,13 @@ export const Members: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {isAdmin && selectedMemberIds.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setIsBatchDeleteModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shadow-sm transition active:scale-95 cursor-pointer animate-pulse"
-              title="លុបសមាជិកដែលបានជ្រើសរើស"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>លុបដែលបានជ្រើស ({selectedMemberIds.length})</span>
-            </button>
-          )}
-
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-duc-blue hover:bg-duc-navy text-white text-xs font-bold rounded-lg shadow transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{t.registerMember}</span>
-          </button>
-        </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-1.5 px-4 py-2 bg-duc-blue hover:bg-duc-navy text-white text-xs font-bold rounded-lg shadow transition"
+        >
+          <Plus className="w-4 h-4" />
+          <span>{t.registerMember}</span>
+        </button>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm p-4 space-y-4">
@@ -285,10 +271,10 @@ export const Members: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsBatchDeleteModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition active:scale-95 cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition active:scale-95 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>លុបសមាជិក {selectedMemberIds.length} នាក់ដែលបានជ្រើស</span>
+                  <span>លុបដែលបានជ្រើស ({selectedMemberIds.length})</span>
                 </button>
               </div>
             ) : (

@@ -368,28 +368,6 @@ export const Catalog: React.FC = () => {
                 <PlusCircle className="w-4 h-4 text-duc-gold" />
                 <span>+ បញ្ចូលសៀវភៅថ្មីដោយដៃ</span>
               </button>
-
-              {selectedBookIds.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setIsBatchDeleteModalOpen(true)}
-                  className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition active:scale-95 whitespace-nowrap cursor-pointer animate-pulse"
-                  title="លុបសៀវភៅដែលបានជ្រើសរើស"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>លុបដែលបានជ្រើស ({selectedBookIds.length})</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setIsClearAllModalOpen(true)}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition active:scale-95 whitespace-nowrap cursor-pointer"
-                title="លុបសៀវភៅទាំងអស់ក្នុងបណ្ណាល័យ"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>លុបទាំងអស់</span>
-              </button>
             </div>
           )}
         </div>
@@ -545,7 +523,7 @@ export const Catalog: React.FC = () => {
                 className="flex items-center gap-1.5 px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition active:scale-95 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>លុបសៀវភៅ {selectedBookIds.length} ក្បាលដែលបានជ្រើស</span>
+                <span>លុបដែលបានជ្រើស ({selectedBookIds.length})</span>
               </button>
             </div>
           ) : (
