@@ -123,19 +123,21 @@ export class GeminiAiNormalizer implements IAiNormalizer {
     }
 
     const systemInstruction = `You are an expert library cataloging AI for Digital University of Cambodia (DUC).
-Extract complete and accurate bibliographic book metadata from the provided book cover and publication pages.
-Instructions:
-1. title: The primary title of the book
-2. titleKhmer: The Khmer title (e.g. "រចនាគេហទំព័រ ជាមួយ ASP.net 1")
-3. titleEnglish: The English title (e.g. "ASP.net with Visual Studio 2005")
-4. subtitle: Subtitle if any, or null
-5. authors: Array of author names. CRITICAL: Remove all academic honorifics/prefixes like MSc, Dr, អនុបណ្ឌិត, បណ្ឌិត. If authors are written in both Khmer and English, include all clean names (e.g. ["Chi Kim Y", "Te Samnang", "ជី គីមអ៊ី", "តែ សំណាង"]).
-6. publisher: Publisher name (e.g. "Editions Angkor" or "គ្រឹះស្ថានបោះពុម្ពអង្គរ")
-7. publicationYear: Integer publication year (e.g. 2005) or null
-8. isbn13: 13-digit standard ISBN barcode or printed sequence (digits only, e.g. "9789995020255") or null
-9. isbn10: 10-digit ISBN if found or null
-10. language: "km" if primarily Khmer, else "en"
-11. edition: Edition if mentioned or null
+Extract complete, strictly verbatim bibliographic book metadata from the provided book cover and publication pages.
+
+CRITICAL RULES FOR KHMER BOOK COVERS (DO NOT HALLUCINATE OR GUESS):
+1. titleKhmer: The EXACT title in Khmer as printed on the book cover.
+   - You MUST transcribe the EXACT Khmer letters/words printed prominently in large font.
+   - NEVER paraphrase, guess, or replace words with synonyms!
+   - Example: If the cover says "100 វិធី បំផុសស្មារតីមនុស្ស", transcribe "100 វិធី បំផុសស្មារតីមនុស្ស" (DO NOT substitute "មនុស្ស" with "បុគ្គលិក" or anything else).
+   - Pay close attention to stylized/display fonts: read character by character (e.g., ម-ន-ុ-ស-្ស = មនុស្ស).
+2. titleEnglish: If the original English title is known (e.g. "100 Ways to Motivate People") or printed in English, output the clean English title.
+3. subtitle: Explanatory taglines or smaller text below the title (e.g. "វិទ្យាសាស្ត្រនៃការគ្រប់គ្រងលើការងារ...").
+4. authors: Transcribe author(s) and translator(s) cleanly. Look at "និពន្ធ" (author, e.g. "ស្ទីវ ឆានដ៍ល័រ", "ស្កត រីឆាដសុន" / Steve Chandler, Scott Richardson) and "ប្រែសម្រួល" (translator, e.g. "គឹម ចាន់ណា"). Remove academic prefixes like Dr, MSc, អនុបណ្ឌិត, បណ្ឌិត.
+5. isbn13 & isbn10: Look at the back cover barcode or publication page. 13-digit or 10-digit number.
+6. publisher: Publisher name from logo or text (e.g. "Mind Books", "គ្រឹះស្ថានបោះពុម្ពអង្គរ", "Editions Angkor").
+7. publicationYear: Integer publication year or null.
+8. language: "km" if primarily Khmer, else "en".
 
 Respond ONLY with a valid JSON object matching this schema:
 {
@@ -170,7 +172,12 @@ Respond ONLY with a valid JSON object matching this schema:
     }
 
     // Try fastest, modern models first with automatic fallback
-    const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-flash-latest'];
+    const modelsToTry = [
+      'gemini-3.8-flash',
+      'gemini-flash-latest',
+      'gemini-2.5-flash',
+      'gemini-pro-latest',
+    ];
     let lastError: any = null;
 
     for (const model of modelsToTry) {
@@ -181,7 +188,7 @@ Respond ONLY with a valid JSON object matching this schema:
             contents: [{ parts }],
             generationConfig: {
               responseMimeType: 'application/json',
-              temperature: 0.1,
+              temperature: 0.0,
             },
           },
           { timeout: 20000 }
