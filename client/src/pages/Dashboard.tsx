@@ -38,9 +38,7 @@ import {
   Send,
   ChevronDown,
   Check,
-  FileText,
 } from 'lucide-react';
-import { DucExecutiveReportModal } from '../components/DucExecutiveReportModal';
 
 // Faculty Filter Categories
 const FACULTY_FILTERS = [
@@ -135,7 +133,6 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
   const [inventory, setInventory] = useState<any>(null);
   const [circulation, setCirculation] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
-  const [showDucPdfModal, setShowDucPdfModal] = useState(false);
 
   // Book Showcase State
   const [books, setBooks] = useState<any[]>([]);
@@ -381,15 +378,6 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
             </div>
 
             <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
-              <button
-                type="button"
-                onClick={() => setShowDucPdfModal(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white text-xs font-bold rounded-xl shadow transition cursor-pointer"
-              >
-                <FileText className="w-3.5 h-3.5 text-amber-300" />
-                <span>📄 ទាញយក PDF ទម្រង់ DUC (2025)</span>
-              </button>
-
               <Link
                 to="/reports"
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-duc-blue/10 hover:bg-duc-blue hover:text-white text-duc-blue text-xs font-bold rounded-xl transition shadow-2xs cursor-pointer"
@@ -891,11 +879,6 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
           </div>
         </div>
       )}
-      {/* DUC Executive Report PDF Modal */}
-      <DucExecutiveReportModal
-        isOpen={showDucPdfModal}
-        onClose={() => setShowDucPdfModal(false)}
-      />
     </div>
   );
 };
