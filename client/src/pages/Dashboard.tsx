@@ -360,73 +360,7 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
         </div>
       )}
 
-      {/* Staff Quick Action Cards */}
-      {isStaff && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fadeInUp">
-          <Link
-            to="/catalog"
-            className="bg-white p-5 rounded-2xl border border-slate-200 hover:border-duc-gold shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-duc-blue flex items-center justify-center mb-3">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <h3 className="font-bold text-slate-800 group-hover:text-duc-blue transition mb-1">
-                {t.navCatalog}
-              </h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                ស្វែងរកសៀវភៅតាមចំណងជើង អ្នកនិពន្ធ លេខ ISBN និងពិនិត្យចំនួនក្បាលសៀវភៅដែលអាចខ្ចីបានជាក់ស្តែង។
-              </p>
-            </div>
-            <div className="mt-4 flex items-center text-xs font-bold text-duc-blue gap-1">
-              <span>ចូលមើលកាតាឡុក</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
-            </div>
-          </Link>
 
-          <Link
-            to="/scanner"
-            className="bg-white p-5 rounded-2xl border border-slate-200 hover:border-duc-gold shadow-sm hover:shadow transition group flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center mb-3">
-                <Scan className="w-5 h-5" />
-              </div>
-              <h3 className="font-bold text-slate-800 group-hover:text-duc-blue transition mb-1">
-                {t.navScanner}
-              </h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                ប្រើប្រាស់កាមេរ៉ាទូរស័ព្ទដើម្បីស្កេនក្របសៀវភៅ ស្រង់ទិន្នន័យដោយ OCR និង AI ហើយរក្សាទុកដោយស្វ័យប្រវត្តិ។
-              </p>
-            </div>
-            <div className="mt-4 flex items-center text-xs font-bold text-duc-blue gap-1">
-              <span>បើកកម្មវិធីស្កេន AI</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
-            </div>
-          </Link>
-
-          <Link
-            to="/attendance"
-            className="bg-white p-5 rounded-2xl border border-slate-200 hover:border-duc-gold shadow-sm hover:shadow transition group flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-3">
-                <UserCheck className="w-5 h-5" />
-              </div>
-              <h3 className="font-bold text-slate-800 group-hover:text-duc-blue transition mb-1">
-                វត្តមាន & សំណើខ្ចី-សង
-              </h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                កត់ត្រាវត្តមាននិស្សិត ពិនិត្យអនុម័តសំណើខ្ចី ឬ សងសៀវភៅ និងតាមដានអ្នកនៅក្នុងបណ្ណាល័យជាក់ស្តែង។
-              </p>
-            </div>
-            <div className="mt-4 flex items-center text-xs font-bold text-duc-blue gap-1">
-              <span>ទៅកាន់កន្លែងវត្តមាន & ខ្ចី-សង</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
-            </div>
-          </Link>
-        </div>
-      )}
 
       {/* 📊 QUICK LIBRARY ANALYTICS & VISUAL INSIGHTS */}
       {analytics && (
