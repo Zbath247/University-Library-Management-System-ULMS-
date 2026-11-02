@@ -43,8 +43,8 @@ export class RegexFallbackNormalizer implements IAiNormalizer {
       return false;
     };
 
-    // Filter out metadata, noise lines, and author prefixes to extract clean title candidates
-    const nonTitleRegex = /isbn|issn|copyright|©|\(c\)|press|published|បោះពុម្ព|page|volume|all rights|duc|table of contents|http|www|\.com|អន[េប][បដ]?[ណគត័]|បណ្ឌិត|អនុបណ្ឌិត|សាស្ត្រាចារ្យ|msc|phd|prof|dr|author|written by|by\s+|editions\s+/i;
+    // Filter out metadata, noise lines, publisher addresses, and author prefixes to extract clean title candidates
+    const nonTitleRegex = /isbn|issn|copyright|©|\(c\)|press|published|បោះពុម្ព|page|volume|all rights|duc|table of contents|http|www|\.com|អន[េប][បដ]?[ណគត័]|បណ្ឌិត|អនុបណ្ឌិត|សាស្ត្រាចារ្យ|msc|phd|prof|dr|author|written by|by\s+|editions\s+|ផ្ទះលេខ|ផ្លូវ|សង្កាត់|ខណ្ឌ|រាជធានី|ភ្នំពេញ|ខេត្ត|ទូរស័ព្ទ|អ៊ីមែល|tel|phone|fax|email|address|street|building|floor/i;
 
     // Clean edition suffixes (e.g. "Fourth Edition", "4th edition") without discarding the book title
     const cleanTitleLine = (l: string) =>
@@ -159,9 +159,9 @@ CRITICAL RULES FOR KHMER BOOK COVERS (DO NOT HALLUCINATE OR GUESS):
    - Pay close attention to stylized/display fonts: read character by character (e.g., ម-ន-ុ-ស-្ស = មនុស្ស).
 2. titleEnglish: If the original English title is known (e.g. "100 Ways to Motivate People") or printed in English, output the clean English title.
 3. subtitle: Explanatory taglines or smaller text below the title (e.g. "វិទ្យាសាស្ត្រនៃការគ្រប់គ្រងលើការងារ...").
-4. authors: Transcribe author(s) and translator(s) cleanly. Look at "និពន្ធ" (author, e.g. "ស្ទីវ ឆានដ៍ល័រ", "ស្កត រីឆាដសុន" / Steve Chandler, Scott Richardson) and "ប្រែសម្រួល" (translator, e.g. "គឹម ចាន់ណា"). Remove academic prefixes like Dr, MSc, អនុបណ្ឌិត, បណ្ឌិត.
+4. authors: Transcribe author(s), contributor(s), and translator(s) cleanly. Look at "និពន្ធ" (author), "ប្រែសម្រួល" (translator), "ជំនួយការ" or prominent author names printed on the cover (e.g. "ទាវ ឈុនណាន", "Teav Chhun Nan", "ស្ទីវ ឆានដ៍ល័រ"). If names are written in both Khmer and English on the cover, transcribe both names into the authors array. Remove academic prefixes like Dr, MSc, អនុបណ្ឌិត, បណ្ឌិត.
 5. isbn13 & isbn10: Look at the back cover barcode or publication page. 13-digit or 10-digit number.
-6. publisher: Publisher name from logo or text (e.g. "Mind Books", "គ្រឹះស្ថានបោះពុម្ពអង្គរ", "Editions Angkor").
+6. publisher: Publisher name from logo or text (e.g. "Editions Angkor", "គ្រឹះស្ថានបោះពុម្ពអង្គរ", "Mind Books").
 7. publicationYear: Integer publication year or null.
 8. language: "km" if primarily Khmer, else "en".
 
@@ -216,7 +216,7 @@ Respond ONLY with a valid JSON object matching this schema:
               temperature: 0.0,
             },
           },
-          { timeout: 5000 }
+          { timeout: 12000 }
         );
 
         const rawContent = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
