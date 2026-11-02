@@ -161,47 +161,15 @@ export const Reports: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setShowDucPdfModal(true)}
-            className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-900 hover:from-blue-800 hover:to-indigo-900 text-white text-xs font-bold rounded-xl shadow-md transition active:scale-95 cursor-pointer border border-blue-400/30"
-          >
-            <FileText className="w-3.5 h-3.5 text-amber-300" />
-            <span>📄 ទាញយក PDF ទម្រង់ DUC</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              const apiBase = import.meta.env.VITE_API_URL || '';
-              const origin = apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
-              window.open(`${origin}/api/v1/reports/monthly-reading-word?month=តុលា&year=2026&mode=benchmark`, '_blank');
-            }}
-            className="flex items-center gap-2 px-3.5 py-2 bg-blue-800 hover:bg-blue-900 text-white text-xs font-bold rounded-xl shadow-md transition active:scale-95 cursor-pointer border border-blue-400/30"
-            title="ទាញយករបាយការណ៍ជាឯកសារ Word (.docx)"
-          >
-            <FileText className="w-3.5 h-3.5 text-blue-200" />
-            <span>📝 ទាញយក Word (.docx)</span>
-          </button>
-
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={fetchReports}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
             title="ទាញយកទិន្នន័យថ្មី"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>ផ្ទុកឡើងវិញ</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>{t.exportCatalogCsv}</span>
           </button>
         </div>
       </div>
@@ -266,7 +234,7 @@ export const Reports: React.FC = () => {
           }`}
         >
           <Upload className="w-4 h-4" />
-          <span>📁 នាំចូលទិន្នន័យ CSV (Batch Import)</span>
+          <span>📁 នាំចូល / នាំចេញ CSV</span>
         </button>
       </div>
 
@@ -648,9 +616,30 @@ export const Reports: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 3: CSV BATCH IMPORT SECTION */}
+      {/* TAB 3: CSV BATCH IMPORT & EXPORT SECTION */}
       {activeTab === 'CSV_EXPORT' && (
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 animate-fadeIn">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6 animate-fadeIn">
+          {/* CSV Export Section */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+            <div>
+              <h3 className="font-bold text-base text-slate-800 flex items-center gap-2">
+                <Download className="w-5 h-5 text-emerald-600" />
+                <span>ទាញយកទិន្នន័យសៀវភៅ (Export Catalog CSV)</span>
+              </h3>
+              <p className="text-xs text-slate-500">
+                ទាញយកបញ្ជីសៀវភៅទាំងអស់ដែលមានក្នុងប្រព័ន្ធបណ្ណាល័យជាឯកសារ Excel / CSV
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              <span>{t.exportCatalogCsv}</span>
+            </button>
+          </div>
+
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
               <h3 className="font-bold text-base text-slate-800">{t.importCsv}</h3>
