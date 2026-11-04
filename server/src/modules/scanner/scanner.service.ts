@@ -189,13 +189,6 @@ export class ScannerService {
               }
             } catch (ocrErr) {
               console.warn(`OCR extraction failed/timed out on ${img.originalFileName}:`, ocrErr);
-              const fallback = new MockOcrAdapter();
-              const fallbackResult = await fallback.extractText(buffer, img.mimeType, ['eng']);
-              combinedOcrText += `\n--- PAGE: ${img.imageType} ---\n` + fallbackResult.rawText;
-              if (fallbackResult.confidence !== null) {
-                avgConfidence += fallbackResult.confidence;
-                count++;
-              }
             }
           }
         }
@@ -395,31 +388,37 @@ export class ScannerService {
       ? (publicationYear || extMatch?.publicationYear || null)
       : (extMatch?.publicationYear || publicationYear || null);
 
-    // Duplicate detection
+    // Duplicate detection across ISBN, barcode, title (Khmer & English), and authors
+    const scannedBarcode = session.candidates.find((c) => c.fieldName === 'barcode')?.fieldValue || null;
     const duplicateCheck = await DuplicateService.findPotentialDuplicates({
       isbn10: isbn10 || extMatch?.isbn10,
       isbn13: isbn13 || extMatch?.isbn13,
+      barcode: scannedBarcode,
       title: effectiveTitle,
+      titleKhmer: effectiveKhmer,
+      titleEnglish: effectiveEnglish,
       authors: effectiveAuthors,
     });
+
+    const mb = duplicateCheck.isDuplicate ? duplicateCheck.matchedBook : null;
 
     return {
       session,
       images: session.images,
-      extractionMethod: extMatch ? 'ISBN_MATCH' : (isAiResult ? 'GEMINI_AI' : 'LOCAL_OCR'),
+      extractionMethod: duplicateCheck.isDuplicate ? 'CATALOG_DUPLICATE_MATCH' : (extMatch ? 'ISBN_MATCH' : (isAiResult ? 'GEMINI_AI' : 'LOCAL_OCR')),
       extracted: {
-        title: effectiveTitle,
-        titleKhmer: effectiveKhmer,
-        titleEnglish: effectiveEnglish,
-        subtitle: subtitle || extMatch?.subtitle || null,
-        authors: effectiveAuthors,
-        isbn10: isbn10 || extMatch?.isbn10 || null,
-        isbn13: isbn13 || extMatch?.isbn13 || null,
-        publisher: effectivePublisher,
-        publicationYear: effectiveYear,
-        edition: edition || extMatch?.edition || null,
-        language: language || (isKhmer ? 'km' : 'en'),
-        description: description || extMatch?.description || null,
+        title: mb?.titleKhmer || mb?.titleEnglish || effectiveTitle,
+        titleKhmer: mb?.titleKhmer || effectiveKhmer,
+        titleEnglish: mb?.titleEnglish || effectiveEnglish,
+        subtitle: mb?.subtitle || subtitle || extMatch?.subtitle || null,
+        authors: mb?.authors?.length ? mb.authors : effectiveAuthors,
+        isbn10: mb?.isbn10 || isbn10 || extMatch?.isbn10 || null,
+        isbn13: mb?.isbn13 || isbn13 || extMatch?.isbn13 || null,
+        publisher: mb?.publisher || effectivePublisher,
+        publicationYear: mb?.publicationYear || effectiveYear,
+        edition: mb?.edition || edition || extMatch?.edition || null,
+        language: mb?.language || language || (isKhmer ? 'km' : 'en'),
+        description: mb?.descriptionKhmer || mb?.descriptionEnglish || description || extMatch?.description || null,
       },
       externalCandidates: {
         googleBooks: googleData,
@@ -519,13 +518,44 @@ export class ScannerService {
       // Create Physical Copies (Supports Single Copy or Batch Copies 1..100)
       const count = Math.max(1, Math.min(100, copyData.copyCount || 1));
       const createdCopies: any[] = [];
-      const cleanBaseAccession = copyData.accessionNumber.replace(/-0*1$/, '');
-      const cleanBaseBarcode = copyData.barcode.replace(/-0*1$/, '');
+
+      // Determine starting index and base prefix
+      let startingIndex = 1;
+      let cleanBaseAccession = (copyData.accessionNumber || '').replace(/-(?:0*\d+|\d+)$/, '');
+      let cleanBaseBarcode = (copyData.barcode || '').replace(/-(?:0*\d+|\d+)$/, '');
+
+      if (mode === 'ADD_COPY_TO_EXISTING' && existingBookId) {
+        const existingCopies = await tx.bookCopy.findMany({
+          where: { bookId },
+          orderBy: { accessionNumber: 'asc' },
+          select: { accessionNumber: true, barcode: true },
+        });
+        startingIndex = existingCopies.length + 1;
+
+        if (existingCopies.length > 0 && !cleanBaseAccession) {
+          const sampleAcc = existingCopies[0].accessionNumber || '';
+          cleanBaseAccession = sampleAcc.replace(/-(?:0*\d+|\d+)$/, '');
+        }
+      }
+
+      if (!cleanBaseAccession) {
+        cleanBaseAccession = `DUC-BC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      }
+      if (!cleanBaseBarcode) {
+        cleanBaseBarcode = cleanBaseAccession;
+      }
 
       for (let i = 0; i < count; i++) {
-        const copyNum = String(i + 1).padStart(2, '0');
-        let accNum = count === 1 ? copyData.accessionNumber : `${cleanBaseAccession}-${copyNum}`;
-        let barCode = count === 1 ? copyData.barcode : `${cleanBaseBarcode}-${copyNum}`;
+        const copySeq = startingIndex + i;
+        const copyNum = String(copySeq).padStart(2, '0');
+
+        let accNum = mode === 'ADD_COPY_TO_EXISTING'
+          ? `${cleanBaseAccession}-${copyNum}`
+          : (count === 1 ? copyData.accessionNumber : `${cleanBaseAccession}-${copyNum}`);
+
+        let barCode = mode === 'ADD_COPY_TO_EXISTING'
+          ? `${cleanBaseBarcode}-${copyNum}`
+          : (count === 1 ? copyData.barcode : `${cleanBaseBarcode}-${copyNum}`);
 
         // Ensure unique accession number
         const existingAcc = await tx.bookCopy.findUnique({ where: { accessionNumber: accNum } });

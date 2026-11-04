@@ -6,9 +6,9 @@ import { z } from 'zod';
 
 const approveSchema = z.object({
   mode: z.enum(['NEW_TITLE', 'ADD_COPY_TO_EXISTING']),
-  existingBookId: z.string().uuid().optional(),
+  existingBookId: z.string().uuid().optional().nullable(),
   bookData: z.object({
-    titleKhmer: z.string().min(1, 'Khmer title is required'),
+    titleKhmer: z.string().optional().default(''),
     titleEnglish: z.string().optional().default(''),
     subtitle: z.string().optional().nullable(),
     isbn10: z.string().optional().nullable(),
@@ -18,11 +18,11 @@ const approveSchema = z.object({
     publicationYear: z.number().int().optional().nullable(),
     edition: z.string().optional().nullable(),
     language: z.string().default('km'),
-    categoryId: z.string().uuid('Invalid category ID'),
+    categoryId: z.string().optional().nullable(),
     descriptionKhmer: z.string().optional().nullable(),
     descriptionEnglish: z.string().optional().nullable(),
     coverImageUrl: z.string().optional().nullable(),
-  }),
+  }).optional().default({}),
   copyData: z.object({
     accessionNumber: z.string().min(1, 'Accession number is required'),
     barcode: z.string().optional().default(''),
@@ -142,10 +142,41 @@ export class ScannerController {
 
     try {
       const data = parseResult.data;
+
+      // Validation depending on mode
+      if (data.mode === 'NEW_TITLE') {
+        const titleKhmer = data.bookData?.titleKhmer?.trim();
+        const titleEnglish = data.bookData?.titleEnglish?.trim();
+        if (!titleKhmer && !titleEnglish) {
+          res.status(400).json({ success: false, error: { message: 'សូមបញ្ចូលចំណងជើងសៀវភៅជាមុនសិន' } });
+          return;
+        }
+        if (!data.bookData?.categoryId) {
+          res.status(400).json({ success: false, error: { message: 'សូមជ្រើសរើសមហាវិទ្យាល័យ / ដេប៉ាតឺម៉ង់ (Category)' } });
+          return;
+        }
+      } else if (data.mode === 'ADD_COPY_TO_EXISTING') {
+        if (!data.existingBookId) {
+          res.status(400).json({ success: false, error: { message: 'សូមជ្រើសរើសសៀវភៅដែលមានស្រាប់ដើម្បីបូកបន្ថែម' } });
+          return;
+        }
+      }
+
       const cleanBookData = {
-        ...data.bookData,
-        titleEnglish: data.bookData.titleEnglish?.trim() || data.bookData.titleKhmer.trim() || 'Untitled Book',
-        authors: data.bookData.authors?.length ? data.bookData.authors : ['មិនស្គាល់ (Unknown)'],
+        titleKhmer: data.bookData?.titleKhmer?.trim() || data.bookData?.titleEnglish?.trim() || 'Untitled Book',
+        titleEnglish: data.bookData?.titleEnglish?.trim() || data.bookData?.titleKhmer?.trim() || 'Untitled Book',
+        subtitle: data.bookData?.subtitle || null,
+        isbn10: data.bookData?.isbn10 || null,
+        isbn13: data.bookData?.isbn13 || null,
+        authors: data.bookData?.authors?.length ? data.bookData.authors : ['មិនស្គាល់ (Unknown)'],
+        publisher: data.bookData?.publisher || null,
+        publicationYear: data.bookData?.publicationYear || null,
+        edition: data.bookData?.edition || null,
+        language: data.bookData?.language || 'km',
+        categoryId: data.bookData?.categoryId || '',
+        descriptionKhmer: data.bookData?.descriptionKhmer || null,
+        descriptionEnglish: data.bookData?.descriptionEnglish || null,
+        coverImageUrl: data.bookData?.coverImageUrl || null,
       };
       const cleanCopyData = {
         ...data.copyData,
@@ -156,7 +187,7 @@ export class ScannerController {
       const result = await ScannerService.approveAndSaveCatalog({
         sessionId: id,
         mode: data.mode,
-        existingBookId: data.existingBookId,
+        existingBookId: data.existingBookId || undefined,
         bookData: cleanBookData,
         copyData: cleanCopyData,
       });

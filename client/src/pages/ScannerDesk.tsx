@@ -19,6 +19,7 @@ import {
   PlusCircle,
   Zap,
   Search,
+  Loader2,
 } from 'lucide-react';
 import { BookCoverUploadField } from '../components/BookCoverUploadField';
 import { CompactCategorySelect } from '../components/CompactCategorySelect';
@@ -273,6 +274,22 @@ export const ScannerDesk: React.FC = () => {
       // Check for duplicate match
       if (data?.duplicateCheck?.isDuplicate) {
         setSaveMode('ADD_COPY_TO_EXISTING');
+        const dup = data.duplicateCheck;
+        if (dup.suggestedNextAccession) {
+          setAccessionNumber(dup.suggestedNextAccession);
+        }
+        if (dup.defaultShelfLocation) {
+          setShelfLocation(dup.defaultShelfLocation);
+        }
+        if (dup.matchedBook) {
+          const mb = dup.matchedBook;
+          if (mb.titleKhmer) setTitleKhmer(mb.titleKhmer);
+          if (mb.titleEnglish) setTitleEnglish(mb.titleEnglish);
+          if (mb.subtitle) setSubtitle(mb.subtitle);
+          if (mb.authors) setAuthors(Array.isArray(mb.authors) ? mb.authors.join(', ') : mb.authors);
+          if (mb.categoryId) setCategoryId(mb.categoryId);
+          if (mb.coverImageUrl && !coverImageUrl) setCoverImageUrl(mb.coverImageUrl);
+        }
       }
 
       // Automatically retain compressed Base64 data URL so book cover is permanently stored in cloud database
@@ -384,7 +401,13 @@ export const ScannerDesk: React.FC = () => {
     const resolvedBarcode = barcode.trim() || resolvedAccession;
     const resolvedShelf = shelfLocation.trim() || 'ទូទី ១, ជាន់ A-01';
 
-    if (!resolvedCategory) {
+    const matchedBookId = reviewData?.duplicateCheck?.matchedBook?.id;
+    if (saveMode === 'ADD_COPY_TO_EXISTING' && !matchedBookId) {
+      alert('មិនអាចរកឃើញសៀវភៅដែលមានស្រាប់ក្នុងប្រព័ន្ធទេ សូមប្តូរទៅបង្កើតចំណងជើងថ្មី!');
+      return;
+    }
+
+    if (saveMode === 'NEW_TITLE' && !resolvedCategory) {
       alert('សូមជ្រើសរើសមហាវិទ្យាល័យ ឬដេប៉ាតឺម៉ង់ (Category) មុនពេលរក្សាទុក!');
       return;
     }
@@ -394,7 +417,7 @@ export const ScannerDesk: React.FC = () => {
     try {
       const payload = {
         mode: saveMode,
-        existingBookId: reviewData?.duplicateCheck?.matchedBook?.id,
+        existingBookId: matchedBookId,
         bookData: {
           titleKhmer: resolvedTitleKhmer,
           titleEnglish: resolvedTitleEnglish,
@@ -406,7 +429,7 @@ export const ScannerDesk: React.FC = () => {
           publicationYear: publicationYear ? parseInt(publicationYear, 10) : null,
           edition: edition.trim() || null,
           language: language || 'km',
-          categoryId: resolvedCategory,
+          categoryId: resolvedCategory || reviewData?.duplicateCheck?.matchedBook?.categoryId || '',
           coverImageUrl: coverImageUrl.trim() || null,
         },
         copyData: {
@@ -735,47 +758,225 @@ export const ScannerDesk: React.FC = () => {
 
           {/* Right Column: Review & Edit Form */}
           <div className="lg:col-span-8 space-y-4">
-            {/* Duplicate Detected Alert */}
-            {reviewData.duplicateCheck?.isDuplicate && (
-              <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl space-y-3">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-bold text-amber-900 text-sm">
-                      {t.duplicateWarning}
-                    </h4>
-                    <p className="text-xs text-amber-800 mt-0.5">
-                      {reviewData.duplicateCheck.message}
-                    </p>
+            {/* 📚 DEDICATED ADD COPIES SECTION FOR EXISTING BOOKS */}
+            {reviewData.duplicateCheck?.isDuplicate && saveMode === 'ADD_COPY_TO_EXISTING' ? (
+              <div className="bg-white rounded-2xl border-2 border-emerald-500/80 p-5 sm:p-6 shadow-md space-y-5 animate-fadeInUp">
+                {/* Header Banner */}
+                <div className="flex items-start sm:items-center gap-3.5 p-4 bg-emerald-50 border border-emerald-200/90 rounded-2xl text-emerald-950">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-200 text-emerald-900 uppercase tracking-wide">
+                        រកឃើញក្នុងប្រព័ន្ធរួចហើយ
+                      </span>
+                      <span className="text-xs text-emerald-700 font-medium">
+                        (Matched Existing Book)
+                      </span>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-black text-slate-800 leading-snug mt-1 line-clamp-2">
+                      {reviewData.duplicateCheck.matchedBook?.titleKhmer || reviewData.duplicateCheck.matchedBook?.titleEnglish || titleKhmer}
+                    </h3>
+                    {reviewData.duplicateCheck.matchedBook?.titleEnglish && reviewData.duplicateCheck.matchedBook?.titleEnglish !== reviewData.duplicateCheck.matchedBook?.titleKhmer && (
+                      <p className="text-xs text-slate-500 italic mt-0.5 line-clamp-1">
+                        {reviewData.duplicateCheck.matchedBook.titleEnglish}
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 pt-1">
+                {/* Existing Book Summary Info Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                  <div>
+                    <span className="text-slate-400 block font-semibold text-[11px]">អ្នកនិពន្ធ (Authors):</span>
+                    <span className="font-bold text-slate-700 line-clamp-1">
+                      {Array.isArray(reviewData.duplicateCheck.matchedBook?.authors)
+                        ? reviewData.duplicateCheck.matchedBook.authors.join(', ')
+                        : reviewData.duplicateCheck.matchedBook?.authors || authors || 'មិនស្គាល់'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block font-semibold text-[11px]">ដេប៉ាតឺម៉ង់ / មហាវិទ្យាល័យ:</span>
+                    <span className="font-bold text-slate-700 line-clamp-1">
+                      {reviewData.duplicateCheck.matchedBook?.category?.nameKhmer || 'ទូទៅ'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block font-semibold text-[11px]">ចំនួនក្នុងប្រព័ន្ធបច្ចុប្បន្ន:</span>
+                    <span className="font-bold text-emerald-700">
+                      {reviewData.duplicateCheck.totalCopies || 0} ក្បាល (ទំនេរ {reviewData.duplicateCheck.availableCopies || 0} ក្បាល)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quick Copy Stepper & Controls */}
+                <div className="p-4 sm:p-5 bg-emerald-50/40 rounded-2xl border border-emerald-200 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <label className="text-sm sm:text-base font-extrabold text-slate-800 flex items-center gap-1.5">
+                        <span>➕ ចំនួនក្បាលសៀវភៅដែលត្រូវបូកបន្ថែម</span>
+                        <span className="text-emerald-700 text-xs font-semibold">(Copies to Add)</span>
+                      </label>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        ជ្រើសរើសចំនួនក្បាលសៀវភៅជាក់ស្ដែងដែលអ្នកចង់បញ្ចូលទៅក្នុងកាតាឡុកនេះ
+                      </p>
+                    </div>
+
+                    {/* Stepper */}
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => setCopyCount((prev) => Math.max(1, prev - 1))}
+                        className="w-10 h-10 rounded-xl bg-white border border-slate-300 text-slate-700 font-extrabold hover:bg-slate-100 flex items-center justify-center transition shadow-2xs text-lg active:scale-95 cursor-pointer"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={copyCount}
+                        onChange={(e) => setCopyCount(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
+                        className="w-16 h-10 text-center font-black text-lg border-2 border-emerald-500 bg-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCopyCount((prev) => Math.min(100, prev + 1))}
+                        className="w-10 h-10 rounded-xl bg-white border border-slate-300 text-slate-700 font-extrabold hover:bg-slate-100 flex items-center justify-center transition shadow-2xs text-lg active:scale-95 cursor-pointer"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Quick Pills */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-semibold text-slate-600">ជ្រើសរើសរហ័ស:</span>
+                    {[1, 2, 3, 5, 10, 20].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setCopyCount(num)}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                          copyCount === num
+                            ? 'bg-emerald-600 text-white shadow-2xs'
+                            : 'bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50'
+                        }`}
+                      >
+                        +{num} ក្បាល
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Copy Details: Accession Number & Shelf Location */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-emerald-200/60">
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 mb-1 block">
+                        លេខកូដសៀវភៅ (Accession Number)
+                      </label>
+                      <input
+                        type="text"
+                        value={accessionNumber}
+                        onChange={(e) => setAccessionNumber(e.target.value)}
+                        className="w-full p-2.5 text-xs font-mono bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 mb-1 block">
+                        ទីតាំងដាក់លើធ្នើរ (Shelf Location)
+                      </label>
+                      <input
+                        type="text"
+                        value={shelfLocation}
+                        onChange={(e) => setShelfLocation(e.target.value)}
+                        placeholder="ឧ. ទូទី ១, ជាន់ A-01"
+                        className="w-full p-2.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sequential numbering hint */}
+                  {copyCount > 1 && (
+                    <div className="p-2.5 bg-white rounded-lg border border-emerald-200 text-[11px] text-slate-600 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-duc-gold shrink-0" />
+                      <span>
+                        ប្រព័ន្ធនឹងបង្កើតកូដ Accession No. បន្តពីរៀងចាស់ពី{' '}
+                        <span className="font-mono font-bold text-slate-800">
+                          {accessionNumber.replace(/-(?:0*\d+|\d+)$/, '')}-{String((reviewData.duplicateCheck.totalCopies || 0) + 1).padStart(2, '0')}
+                        </span>{' '}
+                        ដល់{' '}
+                        <span className="font-mono font-bold text-slate-800">
+                          {accessionNumber.replace(/-(?:0*\d+|\d+)$/, '')}-{String((reviewData.duplicateCheck.totalCopies || 0) + copyCount).padStart(2, '0')}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Primary 1-Click Action Button */}
+                <div className="pt-2">
                   <button
                     type="button"
-                    onClick={() => setSaveMode('ADD_COPY_TO_EXISTING')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                      saveMode === 'ADD_COPY_TO_EXISTING'
-                        ? 'bg-amber-700 text-white shadow'
-                        : 'bg-white border border-amber-300 text-amber-900'
-                    }`}
+                    disabled={submitting}
+                    onClick={handleApproveSave}
+                    className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-sm sm:text-base shadow-md hover:shadow-lg transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 active:scale-[0.99]"
                   >
-                    {t.btnAddNewCopy}
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>កំពុងបូកសៀវភៅបន្ថែម...</span>
+                      </>
+                    ) : (
+                      <>
+                        <PlusCircle className="w-5 h-5 text-emerald-200" />
+                        <span>⚡ ចុចបូកសៀវភៅបន្ថែម (+{copyCount} ក្បាល) ទៅក្នុងកាតាឡុកនេះភ្លាម</span>
+                      </>
+                    )}
                   </button>
+                </div>
+
+                {/* Secondary switch to NEW_TITLE */}
+                <div className="text-center pt-2 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setSaveMode('NEW_TITLE')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                      saveMode === 'NEW_TITLE'
-                        ? 'bg-amber-700 text-white shadow'
-                        : 'bg-white border border-amber-300 text-amber-900'
-                    }`}
+                    className="text-xs text-slate-500 hover:text-duc-blue underline cursor-pointer"
                   >
-                    {t.btnCreateNewTitle}
+                    🔄 ឬ ចង់បង្កើតជាកាតាឡុកសៀវភៅចំណងជើងថ្មីដោយឡែក? (ចុចទីនេះ)
                   </button>
                 </div>
               </div>
-            )}
+            ) : (
+              <>
+                {/* Duplicate Detected Alert (Shown when user manually switched to NEW_TITLE) */}
+                {reviewData.duplicateCheck?.isDuplicate && (
+                  <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl space-y-3">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="font-bold text-amber-900 text-sm">
+                          {t.duplicateWarning}
+                        </h4>
+                        <p className="text-xs text-amber-800 mt-0.5">
+                          {reviewData.duplicateCheck.message}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setSaveMode('ADD_COPY_TO_EXISTING')}
+                        className="px-3.5 py-1.5 rounded-lg text-xs font-bold transition bg-emerald-600 text-white shadow hover:bg-emerald-700 cursor-pointer flex items-center gap-1.5"
+                      >
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        <span>⚡ ប្តូរទៅបូកសៀវភៅបន្ថែមលើសៀវភៅដែលមានស្រាប់</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
 
             {/* Editable Bibliographic Form */}
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
@@ -1088,28 +1289,42 @@ export const ScannerDesk: React.FC = () => {
                 </button>
               </div>
             </div>
+            </>
+            )}
           </div>
         </div>
       )}
 
       {/* STEP 4: SUCCESS STATE */}
       {step === 'SUCCESS' && (
-        <div className="bg-white rounded-2xl p-12 border border-slate-200 text-center space-y-4 shadow-sm max-w-lg mx-auto">
+        <div className="bg-white rounded-2xl p-8 sm:p-12 border border-slate-200 text-center space-y-4 shadow-sm max-w-lg mx-auto animate-fadeInUp">
           <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
             <CheckCircle className="w-10 h-10" />
           </div>
           <h3 className="font-extrabold text-slate-800 text-xl">
-            បញ្ចូលសៀវភៅចូលបណ្ណាល័យជោគជ័យ!
+            {saveMode === 'ADD_COPY_TO_EXISTING'
+              ? 'បានបូកសៀវភៅបន្ថែមដោយជោគជ័យ!'
+              : 'បញ្ចូលសៀវភៅចូលបណ្ណាល័យជោគជ័យ!'}
           </h3>
           <p className="text-xs text-slate-500 leading-relaxed">
-            ទិន្នន័យកាតាឡុកសៀវភៅ និងក្បាលសៀវភៅរូបវន្តចំនួន{' '}
-            <span className="font-bold text-emerald-600">{copyCount} ក្បាល</span>{' '}
-            {copyCount > 1 ? (
-              <>(Accession No: <span className="font-mono font-bold text-slate-700">{accessionNumber.replace(/-0*1$/, '')}-01</span> ដល់ <span className="font-mono font-bold text-slate-700">{accessionNumber.replace(/-0*1$/, '')}-{String(copyCount).padStart(2, '0')}</span>)</>
+            {saveMode === 'ADD_COPY_TO_EXISTING' ? (
+              <>
+                បានបន្ថែមចំនួន{' '}
+                <span className="font-bold text-emerald-600">{copyCount} ក្បាល</span>{' '}
+                {copyCount > 1 ? (
+                  <>(Accession: <span className="font-mono font-bold text-slate-700">{accessionNumber.replace(/-(?:0*\d+|\d+)$/, '')}-{String((reviewData?.duplicateCheck?.totalCopies || 0) + 1).padStart(2, '0')}</span> ដល់ <span className="font-mono font-bold text-slate-700">{accessionNumber.replace(/-(?:0*\d+|\d+)$/, '')}-{String((reviewData?.duplicateCheck?.totalCopies || 0) + copyCount).padStart(2, '0')}</span>)</>
+                ) : (
+                  <>(Accession: <span className="font-mono font-bold text-slate-700">{accessionNumber}</span>)</>
+                )}{' '}
+                ទៅក្នុងសៀវភៅ «<span className="font-bold text-slate-700">{titleKhmer || titleEnglish}</span>» ដោយជោគជ័យ។
+              </>
             ) : (
-              <>(Accession No: <span className="font-mono font-bold text-slate-700">{accessionNumber}</span>)</>
-            )}{' '}
-            ត្រូវបានអនុម័ត និងរក្សាទុកចូលក្នុងប្រព័ន្ធផ្លូវការរួចរាល់។
+              <>
+                ទិន្នន័យកាតាឡុកសៀវភៅ និងក្បាលសៀវភៅរូបវន្តចំនួន{' '}
+                <span className="font-bold text-emerald-600">{copyCount} ក្បាល</span>{' '}
+                ត្រូវបានអនុម័ត និងរក្សាទុកចូលក្នុងប្រព័ន្ធផ្លូវការរួចរាល់។
+              </>
+            )}
           </p>
 
           <div className="flex justify-center gap-3 pt-4">
