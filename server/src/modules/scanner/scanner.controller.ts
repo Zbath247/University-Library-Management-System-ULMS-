@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ScannerService } from './scanner.service';
 import { ScanImageType, CopyCondition } from '../../types/enums';
 import { AuditService } from '../audit/audit.service';
+import prisma from '../../db/prisma';
 import { z } from 'zod';
 
 const approveSchema = z.object({
@@ -143,22 +144,30 @@ export class ScannerController {
     try {
       const data = parseResult.data;
 
-      // Validation depending on mode
-      if (data.mode === 'NEW_TITLE') {
+      // Validation depending on mode (with auto-fallback to NEW_TITLE if no existing book is supplied)
+      let effectiveMode = data.mode;
+      if (effectiveMode === 'ADD_COPY_TO_EXISTING' && !data.existingBookId) {
+        effectiveMode = 'NEW_TITLE';
+      }
+
+      let categoryId = data.bookData?.categoryId;
+      if (effectiveMode === 'NEW_TITLE') {
         const titleKhmer = data.bookData?.titleKhmer?.trim();
         const titleEnglish = data.bookData?.titleEnglish?.trim();
         if (!titleKhmer && !titleEnglish) {
           res.status(400).json({ success: false, error: { message: 'សូមបញ្ចូលចំណងជើងសៀវភៅជាមុនសិន' } });
           return;
         }
-        if (!data.bookData?.categoryId) {
-          res.status(400).json({ success: false, error: { message: 'សូមជ្រើសរើសមហាវិទ្យាល័យ / ដេប៉ាតឺម៉ង់ (Category)' } });
-          return;
-        }
-      } else if (data.mode === 'ADD_COPY_TO_EXISTING') {
-        if (!data.existingBookId) {
-          res.status(400).json({ success: false, error: { message: 'សូមជ្រើសរើសសៀវភៅដែលមានស្រាប់ដើម្បីបូកបន្ថែម' } });
-          return;
+        if (!categoryId) {
+          const fallbackCat = (await prisma.category.findFirst({
+            where: { parentId: { not: null } },
+          })) || (await prisma.category.findFirst());
+          if (fallbackCat) {
+            categoryId = fallbackCat.id;
+          } else {
+            res.status(400).json({ success: false, error: { message: 'សូមជ្រើសរើសមហាវិទ្យាល័យ / ដេប៉ាតឺម៉ង់ (Category)' } });
+            return;
+          }
         }
       }
 
@@ -173,7 +182,7 @@ export class ScannerController {
         publicationYear: data.bookData?.publicationYear || null,
         edition: data.bookData?.edition || null,
         language: data.bookData?.language || 'km',
-        categoryId: data.bookData?.categoryId || '',
+        categoryId: categoryId || data.bookData?.categoryId || '',
         descriptionKhmer: data.bookData?.descriptionKhmer || null,
         descriptionEnglish: data.bookData?.descriptionEnglish || null,
         coverImageUrl: data.bookData?.coverImageUrl || null,
@@ -186,8 +195,8 @@ export class ScannerController {
 
       const result = await ScannerService.approveAndSaveCatalog({
         sessionId: id,
-        mode: data.mode,
-        existingBookId: data.existingBookId || undefined,
+        mode: effectiveMode,
+        existingBookId: effectiveMode === 'ADD_COPY_TO_EXISTING' ? (data.existingBookId || undefined) : undefined,
         bookData: cleanBookData,
         copyData: cleanCopyData,
       });

@@ -69,6 +69,7 @@ export const ScannerDesk: React.FC = () => {
 
   // Mode for handling duplicates
   const [saveMode, setSaveMode] = useState<'NEW_TITLE' | 'ADD_COPY_TO_EXISTING'>('NEW_TITLE');
+  const [lastApprovedMode, setLastApprovedMode] = useState<'NEW_TITLE' | 'ADD_COPY_TO_EXISTING'>('NEW_TITLE');
   const [submitting, setSubmitting] = useState(false);
 
   // Initialize or fetch categories
@@ -272,7 +273,7 @@ export const ScannerDesk: React.FC = () => {
       setBarcode(extracted.isbn13 || extracted.isbn10 || generatedAccession);
 
       // Check for duplicate match
-      if (data?.duplicateCheck?.isDuplicate) {
+      if (data?.duplicateCheck?.isDuplicate && data?.duplicateCheck?.matchedBook?.id) {
         setSaveMode('ADD_COPY_TO_EXISTING');
         const dup = data.duplicateCheck;
         if (dup.suggestedNextAccession) {
@@ -290,6 +291,8 @@ export const ScannerDesk: React.FC = () => {
           if (mb.categoryId) setCategoryId(mb.categoryId);
           if (mb.coverImageUrl && !coverImageUrl) setCoverImageUrl(mb.coverImageUrl);
         }
+      } else {
+        setSaveMode('NEW_TITLE');
       }
 
       // Automatically retain compressed Base64 data URL so book cover is permanently stored in cloud database
@@ -402,22 +405,19 @@ export const ScannerDesk: React.FC = () => {
     const resolvedShelf = shelfLocation.trim() || 'ទូទី ១, ជាន់ A-01';
 
     const matchedBookId = reviewData?.duplicateCheck?.matchedBook?.id;
-    if (saveMode === 'ADD_COPY_TO_EXISTING' && !matchedBookId) {
-      alert('មិនអាចរកឃើញសៀវភៅដែលមានស្រាប់ក្នុងប្រព័ន្ធទេ សូមប្តូរទៅបង្កើតចំណងជើងថ្មី!');
-      return;
-    }
+    // Auto-resolve mode: If saveMode is ADD_COPY_TO_EXISTING but there is no matched book, ALWAYS save as NEW_TITLE without blocking!
+    const effectiveMode = (saveMode === 'ADD_COPY_TO_EXISTING' && matchedBookId)
+      ? 'ADD_COPY_TO_EXISTING'
+      : 'NEW_TITLE';
 
-    if (saveMode === 'NEW_TITLE' && !resolvedCategory) {
-      alert('សូមជ្រើសរើសមហាវិទ្យាល័យ ឬដេប៉ាតឺម៉ង់ (Category) មុនពេលរក្សាទុក!');
-      return;
-    }
+    const effectiveCategory = resolvedCategory || reviewData?.duplicateCheck?.matchedBook?.categoryId || categories[0]?.id || '';
 
     setSubmitting(true);
 
     try {
       const payload = {
-        mode: saveMode,
-        existingBookId: matchedBookId,
+        mode: effectiveMode,
+        existingBookId: effectiveMode === 'ADD_COPY_TO_EXISTING' ? matchedBookId : undefined,
         bookData: {
           titleKhmer: resolvedTitleKhmer,
           titleEnglish: resolvedTitleEnglish,
@@ -429,7 +429,7 @@ export const ScannerDesk: React.FC = () => {
           publicationYear: publicationYear ? parseInt(publicationYear, 10) : null,
           edition: edition.trim() || null,
           language: language || 'km',
-          categoryId: resolvedCategory || reviewData?.duplicateCheck?.matchedBook?.categoryId || '',
+          categoryId: effectiveCategory,
           coverImageUrl: coverImageUrl.trim() || null,
         },
         copyData: {
@@ -442,6 +442,7 @@ export const ScannerDesk: React.FC = () => {
       };
 
       await api.post(`/scan-sessions/${sessionId}/approve`, payload);
+      setLastApprovedMode(effectiveMode);
       setStep('SUCCESS');
     } catch (err: any) {
       const errorMsg =
@@ -464,6 +465,7 @@ export const ScannerDesk: React.FC = () => {
     setReviewData(null);
     setSessionId(null);
     setCopyCount(1);
+    setSaveMode('NEW_TITLE');
     setStep('CAPTURE');
   };
 
@@ -1302,12 +1304,12 @@ export const ScannerDesk: React.FC = () => {
             <CheckCircle className="w-10 h-10" />
           </div>
           <h3 className="font-extrabold text-slate-800 text-xl">
-            {saveMode === 'ADD_COPY_TO_EXISTING'
+            {lastApprovedMode === 'ADD_COPY_TO_EXISTING'
               ? 'បានបូកសៀវភៅបន្ថែមដោយជោគជ័យ!'
               : 'បញ្ចូលសៀវភៅចូលបណ្ណាល័យជោគជ័យ!'}
           </h3>
           <p className="text-xs text-slate-500 leading-relaxed">
-            {saveMode === 'ADD_COPY_TO_EXISTING' ? (
+            {lastApprovedMode === 'ADD_COPY_TO_EXISTING' ? (
               <>
                 បានបន្ថែមចំនួន{' '}
                 <span className="font-bold text-emerald-600">{copyCount} ក្បាល</span>{' '}
