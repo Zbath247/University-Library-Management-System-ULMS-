@@ -593,30 +593,30 @@ export const ScannerDesk: React.FC = () => {
               )}
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-              {/* Option 1: Gemini Vision AI (Active with user's API Key - 100% Accurate) */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+              {/* Primary: Gemini Vision AI (100% Accurate Multimodal Vision) */}
               <button
                 type="button"
                 onClick={() => handleStartProcessing(false)}
                 disabled={!coverFile && !titlePageFile}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-duc-blue to-indigo-700 hover:from-duc-navy hover:to-indigo-800 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                title="ប្រើប្រាស់ Gemini Vision AI អានរូបភាពក្របសៀវភៅ និងទំព័រព័ត៌មានដោយផ្ទាល់ ត្រឹមត្រូវ ១០០%"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-duc-blue via-indigo-600 to-duc-navy hover:from-duc-navy hover:to-indigo-800 active:scale-95 text-white font-black text-sm rounded-xl shadow-md transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                title="ប្រើប្រាស់ Gemini Vision AI អានរូបភាពក្របសៀវភៅ និងទំព័រព័ត៌មានដោយផ្ទាល់ សុក្រឹត ១០០%"
               >
                 <Sparkles className="w-4 h-4 text-duc-gold animate-pulse" />
-                <span>ស្កេនដោយ AI (ណែនាំ - សុក្រឹត ១០០%)</span>
+                <span>ស្កេនស្រង់ទិន្នន័យដោយ AI (សុក្រឹត ១០០%)</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
-              {/* Option 2: Fast Local OCR (No External AI) */}
+              {/* Secondary fallback: Local OCR */}
               <button
                 type="button"
                 onClick={() => handleStartProcessing(true)}
                 disabled={!coverFile && !titlePageFile}
-                className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                className="flex items-center justify-center gap-1.5 px-3 py-2 text-slate-500 hover:text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-100 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 title="ស្កេនស្រង់ទិន្នន័យក្នុងម៉ាស៊ីនផ្ទាល់ដោយមិនប្រើ AI"
               >
-                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                <span>ស្កេនរហ័ស (មិនប្រើ AI)</span>
+                <Zap className="w-3.5 h-3.5 text-amber-500" />
+                <span>OCR ធម្មតា (Offline)</span>
               </button>
             </div>
           </div>

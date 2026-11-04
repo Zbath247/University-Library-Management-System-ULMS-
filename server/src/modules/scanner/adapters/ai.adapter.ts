@@ -43,36 +43,22 @@ export class RegexFallbackNormalizer implements IAiNormalizer {
       return false;
     };
 
-    // Filter out metadata, noise lines, publisher addresses, and author prefixes to extract clean title candidates
-    const nonTitleRegex = /isbn|issn|copyright|©|\(c\)|press|published|បោះពុម្ព|page|volume|all rights|duc|table of contents|http|www|\.com|អន[េប][បដ]?[ណគត័]|បណ្ឌិត|អនុបណ្ឌិត|សាស្ត្រាចារ្យ|msc|phd|prof|dr|author|written by|by\s+|editions\s+|ផ្ទះលេខ|ផ្លូវ|សង្កាត់|ខណ្ឌ|រាជធានី|ភ្នំពេញ|ខេត្ត|ទូរស័ព្ទ|អ៊ីមែល|tel|phone|fax|email|address|street|building|floor/i;
-
-    // Clean edition suffixes (e.g. "Fourth Edition", "4th edition") without discarding the book title
+    // Clean edition suffixes (e.g. "Fourth Edition", "4th edition") and edge punctuation
     const cleanTitleLine = (l: string) =>
-      l.replace(/(?:,|\s*[-–]\s*)?(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\d+(?:st|nd|rd|th)?)\s+edition/gi, '').trim();
+      l
+        .replace(/(?:,|\s*[-–]\s*)?(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\d+(?:st|nd|rd|th)?)\s+edition/gi, '')
+        .replace(/^[:\-\s\.,~|^_]+|[:\-\s\.,~|^_]+$/g, '')
+        .trim();
 
-    const titleCandidates = rawLines
-      .map(cleanTitleLine)
-      .filter((l) => {
-        if (!l || l.length < 4 || l.length > 120) return false;
-        if (nonTitleRegex.test(l)) return false;
-        if (isMultiNameAuthorLine(l)) return false;
-        const clean = l.replace(/[^a-zA-Z\u1780-\u17FF0-9\s]/g, '').trim();
-        return clean.length >= 4;
-      });
-
-    // Differentiate Khmer and English titles
-    const khmerLine = titleCandidates.find((l) => /[\u1780-\u17FF]{4,}/.test(l));
-    const englishLine = titleCandidates.find((l) => /[a-zA-Z]{3,}/.test(l));
-
-    const title = khmerLine || englishLine || titleCandidates[0] || '';
-    const subtitle = titleCandidates[1] && titleCandidates[1] !== title && titleCandidates[1].length < 80 ? titleCandidates[1] : null;
-
-    // Authors extraction heuristic (Khmer titles + English prefixes + comma-separated lines)
+    // 1. Authors extraction heuristic (Khmer titles + English prefixes + comma-separated lines)
     let authors: string[] = [];
-    const authorPattern = /(?:by\s+|author(?:s)?:?|written by:?|និពន្ធដោយ:?|រៀបរៀងដោយ:?|ចងក្រងដោយ:?|អន[េប][បដ]?[ណគត័][ៈ:]?|អនុបណ្ឌិត|បណ្ឌិត|សាស្ត្រាចារ្យ|msc\.|phd|dr\.)\s*([^\n\r,;]+)/gi;
+    const authorPattern = /(?:by\s+|author(?:s)?\s*[:\.]?|written by\s*[:\.]?|និពន្ធ(?:ដោយ)?\s*[:\.]?|រៀបរៀង(?:ដោយ)?\s*[:\.]?|ចងក្រង(?:ដោយ)?\s*[:\.]?|អន[េប][បដ]?[ណគត័]\s*[:\.]?|អនុបណ្ឌិត|បណ្ឌិត|សាស្ត្រាចារ្យ|msc\.|phd|dr\.)\s*([^\n\r,;]+)/gi;
     let authorMatch;
     while ((authorMatch = authorPattern.exec(ocrText)) !== null) {
-      const rawName = authorMatch[1].replace(/^(?:អនុបណ្ឌិត|បណ្ឌិត|សាស្ត្រាចារ្យ|អន[េប][បដ]?[ណគត័][ៈ:]?|MSc\.|Dr\.|Prof\.)\s*/i, '').trim();
+      let rawName = authorMatch[1]
+        .replace(/^(?:អនុបណ្ឌិត|បណ្ឌិត|សាស្ត្រាចារ្យ|អន[េប][បដ]?[ណគត័]\s*[:\.]?|MSc\.|Dr\.|Prof\.)\s*/i, '')
+        .replace(/^[:\-\s\.,~|^_]+|[:\-\s\.,~|^_]+$/g, '')
+        .trim();
       if (rawName.length >= 2 && rawName.length <= 40 && !authors.includes(rawName)) {
         authors.push(rawName);
       }
@@ -83,21 +69,21 @@ export class RegexFallbackNormalizer implements IAiNormalizer {
     if (multiAuthorLine && authors.length === 0) {
       authors = multiAuthorLine
         .split(/[,;&]|\band\b|\bនិង\b/)
-        .map((a) => a.trim())
+        .map((a) => a.replace(/^[:\-\s\.,~|^_]+|[:\-\s\.,~|^_]+$/g, '').trim())
         .filter((a) => a.length >= 2);
     }
 
     const authorLine = rawLines.find((l) => /by\s+|author|authors|និពន្ធ|រៀបរៀង|ចងក្រង|អន[េប][បដ]?[ណគត័]|អនុបណ្ឌិត|msc/i.test(l));
     if (authorLine && authors.length === 0) {
       const cleaned = authorLine
-        .replace(/^(?:by\s+|author(?:s)?:|និពន្ធដោយ:?|រៀបរៀងដោយ:?|អន[េប][បដ]?[ណគត័][ៈ:]?|អនុបណ្ឌិត|MSc\.)\s*/gi, '')
+        .replace(/^(?:by\s+|author(?:s)?\s*[:\.]?|និពន្ធ(?:ដោយ)?\s*[:\.]?|រៀបរៀង(?:ដោយ)?\s*[:\.]?|អន[េប][បដ]?[ណគត័]\s*[:\.]?|អនុបណ្ឌិត|MSc\.)\s*/gi, '')
         .split(/,|and|និង|&|;/)
-        .map((a) => a.trim())
+        .map((a) => a.replace(/^[:\-\s\.,~|^_]+|[:\-\s\.,~|^_]+$/g, '').trim())
         .filter((a) => a.length >= 2);
       if (cleaned.length > 0) authors = cleaned;
     }
 
-    // Publisher heuristic (Editions Angkor, គ្រឹះស្ថានបោះពុម្ព..., Publishing, Press)
+    // 2. Publisher heuristic (Editions Angkor, គ្រឹះស្ថានបោះពុម្ព..., Publishing, Press)
     let publisher: string | null = null;
     const publisherKhmer = ocrText.match(/គ្រឹះស្ថានបោះពុម្ព[^\n\r,.]+/i);
     const publisherEng = ocrText.match(/(?:Editions\s+[A-Za-z]+|[A-Z][a-zA-Z\s]+(?:Press|Publishing|Publishers|Books|House))/i);
@@ -106,6 +92,49 @@ export class RegexFallbackNormalizer implements IAiNormalizer {
     } else if (publisherEng) {
       publisher = publisherEng[0].trim();
     }
+
+    // Helper to check if a candidate line is an author name or publisher
+    const isAuthorOrPublisherLine = (l: string) => {
+      const norm = l.toLowerCase().replace(/[^a-zA-Z\u1780-\u17FF]/g, '');
+      if (publisher) {
+        const pubNorm = publisher.toLowerCase().replace(/[^a-zA-Z\u1780-\u17FF]/g, '');
+        if (norm.includes(pubNorm) || pubNorm.includes(norm)) return true;
+      }
+      for (const a of authors) {
+        const an = a.toLowerCase().replace(/[^a-zA-Z\u1780-\u17FF]/g, '');
+        if (an.length >= 3 && (norm.includes(an) || an.includes(norm))) return true;
+      }
+      return false;
+    };
+
+    // Filter out metadata, noise lines, publisher addresses, and author lines to extract clean title candidates
+    const nonTitleRegex = /isbn|issn|copyright|©|\(c\)|press|published|បោះពុម្ព|page|volume|all rights|duc|table of contents|http|www|\.com|អន[េប][បដ]?[ណគត័]|បណ្ឌិត|អនុបណ្ឌិត|សាស្ត្រាចារ្យ|msc|phd|prof|dr|author|written by|by\s+|editions\s+|ផ្ទះលេខ|ផ្លូវ|សង្កាត់|ខណ្ឌ|រាជធានី|ភ្នំពេញ|ខេត្ត|ទូរស័ព្ទ|អ៊ីមែល|tel|phone|fax|email|address|street|building|floor/i;
+
+    const titleCandidates = rawLines
+      .map(cleanTitleLine)
+      .filter((l) => {
+        if (!l || l.length < 3 || l.length > 120) return false;
+        if (nonTitleRegex.test(l)) return false;
+        if (isMultiNameAuthorLine(l)) return false;
+        if (isAuthorOrPublisherLine(l)) return false;
+        const clean = l.replace(/[^a-zA-Z\u1780-\u17FF0-9\s]/g, '').trim();
+        return clean.length >= 3;
+      });
+
+    // Differentiate Khmer and English titles
+    const khmerLine = titleCandidates.find((l) => /[\u1780-\u17FF]{4,}/.test(l));
+    const englishCandidates = titleCandidates.filter((l) => /[a-zA-Z]{3,}/.test(l));
+    let englishLine: string | null = null;
+    if (englishCandidates.length > 0) {
+      if (englishCandidates.length >= 2 && englishCandidates[0].length < 25 && englishCandidates[1].length < 30) {
+        englishLine = `${englishCandidates[0]} ${englishCandidates[1]}`.trim();
+      } else {
+        englishLine = englishCandidates[0];
+      }
+    }
+
+    const title = khmerLine || englishLine || titleCandidates[0] || '';
+    const subtitle = titleCandidates[1] && titleCandidates[1] !== title && titleCandidates[1].length < 80 ? titleCandidates[1] : null;
 
     const metadata: ExtractedBookMetadata = {
       title,
@@ -197,11 +226,12 @@ Respond ONLY with a valid JSON object matching this schema:
       parts.push({ text: `Book Scanned Text:\n${ocrText.slice(0, 4000)}` });
     }
 
-    // Try fastest, modern models first with automatic fallback
+    // Prioritize fastest, modern models with verified vision accuracy
     const modelsToTry = [
-      'gemini-3.6-flash',
       'gemini-3.5-flash',
+      'gemini-3.6-flash',
       'gemini-3.1-flash-lite',
+      'gemini-3.8-flash',
     ];
     let lastError: any = null;
 
@@ -216,7 +246,7 @@ Respond ONLY with a valid JSON object matching this schema:
               temperature: 0.0,
             },
           },
-          { timeout: 12000 }
+          { timeout: 25000 }
         );
 
         const rawContent = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
