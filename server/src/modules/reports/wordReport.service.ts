@@ -624,7 +624,7 @@ export class WordReportService {
                   spacing: { line: 260, lineRule: 'auto', after: 40 },
                   children: [
                     new TextRun({
-                      text: `ថ្ងៃពុធ ១២កើត ខែកត្តិក ឆ្នាំរោង ឆស័ក ព.ស. ២៥៦៩`,
+                      text: reportData.lunarDate,
                       font: FONT_BATTAMBANG,
                       size: 19,
                       sizeComplexScript: 19,
@@ -638,7 +638,7 @@ export class WordReportService {
                   spacing: { line: 260, lineRule: 'auto', after: 60 },
                   children: [
                     new TextRun({
-                      text: `រាជធានីភ្នំពេញ ថ្ងៃទី០៤ ខែ${monthName} ឆ្នាំ${year}`,
+                      text: reportData.solarDate,
                       font: FONT_BATTAMBANG,
                       size: 20,
                       sizeComplexScript: 20,
@@ -647,27 +647,13 @@ export class WordReportService {
                 }),
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
-                  spacing: { line: 260, lineRule: 'auto', after: 700 }, // Space for physical signature
+                  spacing: { line: 260, lineRule: 'auto', after: 800 }, // Space for physical signature and stamp
                   children: [
                     new TextRun({
                       text: 'អ្នកគ្រប់គ្រងបណ្ណាល័យ',
                       font: FONT_MUOL,
                       size: 21,
                       sizeComplexScript: 21,
-                      bold: true,
-                      boldComplexScript: true,
-                    }),
-                  ],
-                }),
-                new Paragraph({
-                  alignment: AlignmentType.CENTER,
-                  spacing: { line: 260, lineRule: 'auto' },
-                  children: [
-                    new TextRun({
-                      text: 'សែម សុខុម',
-                      font: FONT_MUOL,
-                      size: 22,
-                      sizeComplexScript: 22,
                       bold: true,
                       boldComplexScript: true,
                     }),

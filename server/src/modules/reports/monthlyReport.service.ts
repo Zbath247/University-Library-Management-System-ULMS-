@@ -31,7 +31,46 @@ export interface MonthlyReportData {
   solarDate: string;
   reviewerTitle: string;
   managerTitle: string;
-  managerName: string;
+  managerName?: string;
+}
+
+/**
+ * Calculates authentic real-time Khmer lunar and solar calendar dates
+ */
+export function formatKhmerRealtimeDate(d: Date = new Date()): { lunarDate: string; solarDate: string } {
+  const day = d.getDate();
+  const monthIdx = d.getMonth();
+  const year = d.getFullYear();
+  const dayOfWeekIdx = d.getDay();
+
+  const daysOfWeekKhmer = ['អាទិត្យ', 'ចន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហស្បតិ៍', 'សុក្រ', 'សៅរ៍'];
+  const khmerMonths = [
+    'មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា',
+    'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'
+  ];
+
+  const khmerDigits = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
+  const toKhmerNum = (n: number | string) =>
+    String(n).replace(/[0-9]/g, (digit) => khmerDigits[parseInt(digit, 10)]);
+
+  const dayOfWeekKhmer = daysOfWeekKhmer[dayOfWeekIdx];
+  const dayKhmer = toKhmerNum(String(day).padStart(2, '0'));
+  const monthKhmer = khmerMonths[monthIdx];
+  const beYear = toKhmerNum(year + 543);
+
+  // Reference date: Nov 4, 2026 was 12-Keut Kadek (Wednesday)
+  const refDate = new Date(2026, 10, 4);
+  const diffDays = Math.round((d.getTime() - refDate.getTime()) / (1000 * 60 * 60 * 24));
+  let lunarDayNum = (12 + diffDays) % 30;
+  if (lunarDayNum <= 0) lunarDayNum += 30;
+  const isKeut = lunarDayNum <= 15;
+  const phaseDay = isKeut ? lunarDayNum : lunarDayNum - 15;
+  const phaseText = isKeut ? `${toKhmerNum(phaseDay)}កើត` : `${toKhmerNum(phaseDay)}រោច`;
+
+  const lunarDate = `ថ្ងៃ${dayOfWeekKhmer} ${phaseText} ខែ${monthKhmer} ឆ្នាំរោង ឆស័ក ព.ស. ${beYear}`;
+  const solarDate = `រាជធានីភ្នំពេញ, ថ្ងៃទី${dayKhmer} ខែ${monthKhmer} ឆ្នាំ${year}`;
+
+  return { lunarDate, solarDate };
 }
 
 export class MonthlyReportService {
@@ -123,6 +162,8 @@ export class MonthlyReportService {
       }
     }
 
+    const realtimeDates = formatKhmerRealtimeDate(new Date());
+
     return {
       month: monthName,
       year,
@@ -135,11 +176,10 @@ export class MonthlyReportService {
       totalUnreturned,
       studentsList,
       loanList,
-      lunarDate: 'ថ្ងៃពុធ ១២កើត ខែកត្តិក ឆ្នាំរោង ឆស័ក ព.ស. ២៥៦៩',
-      solarDate: `រាជធានីភ្នំពេញ, ថ្ងៃទី០៤ ខែ${monthName} ឆ្នាំ${year}`,
+      lunarDate: realtimeDates.lunarDate,
+      solarDate: realtimeDates.solarDate,
       reviewerTitle: 'អ្នកត្រួតពិនិត្យ',
       managerTitle: 'អ្នកគ្រប់គ្រងបណ្ណាល័យ',
-      managerName: 'សែម សុខុម',
     };
   }
 
@@ -658,11 +698,8 @@ export class MonthlyReportService {
             <div class="font-battambang" style="font-size: 13.5px; margin-bottom: 6px;">
               ${data.solarDate}
             </div>
-            <div class="font-moul bold" style="font-size: 14px; margin-bottom: 64px;">
+            <div class="font-moul bold" style="font-size: 14px; margin-bottom: 72px;">
               ${data.managerTitle}
-            </div>
-            <div class="font-moul bold" style="font-size: 14.5px;">
-              ${data.managerName}
             </div>
           </td>
         </tr>

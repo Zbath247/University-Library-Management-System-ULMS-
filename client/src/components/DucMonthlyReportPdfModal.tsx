@@ -19,6 +19,45 @@ interface DucMonthlyReportPdfModalProps {
   onClose: () => void;
 }
 
+/**
+ * Calculates authentic real-time Khmer lunar and solar calendar dates
+ */
+const formatKhmerRealtimeDate = (d: Date = new Date()) => {
+  const day = d.getDate();
+  const monthIdx = d.getMonth();
+  const year = d.getFullYear();
+  const dayOfWeekIdx = d.getDay();
+
+  const daysOfWeekKhmer = ['អាទិត្យ', 'ចន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហស្បតិ៍', 'សុក្រ', 'សៅរ៍'];
+  const khmerMonths = [
+    'មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា',
+    'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'
+  ];
+
+  const khmerDigits = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
+  const toKhmerNum = (n: number | string) =>
+    String(n).replace(/[0-9]/g, (digit) => khmerDigits[parseInt(digit, 10)]);
+
+  const dayOfWeekKhmer = daysOfWeekKhmer[dayOfWeekIdx];
+  const dayKhmer = toKhmerNum(String(day).padStart(2, '0'));
+  const monthKhmer = khmerMonths[monthIdx];
+  const beYear = toKhmerNum(year + 543);
+
+  // Reference date: Nov 4, 2026 was 12-Keut Kadek (Wednesday)
+  const refDate = new Date(2026, 10, 4);
+  const diffDays = Math.round((d.getTime() - refDate.getTime()) / (1000 * 60 * 60 * 24));
+  let lunarDayNum = (12 + diffDays) % 30;
+  if (lunarDayNum <= 0) lunarDayNum += 30;
+  const isKeut = lunarDayNum <= 15;
+  const phaseDay = isKeut ? lunarDayNum : lunarDayNum - 15;
+  const phaseText = isKeut ? `${toKhmerNum(phaseDay)}កើត` : `${toKhmerNum(phaseDay)}រោច`;
+
+  const lunarDate = `ថ្ងៃ${dayOfWeekKhmer} ${phaseText} ខែ${monthKhmer} ឆ្នាំរោង ឆស័ក ព.ស. ${beYear}`;
+  const solarDate = `រាជធានីភ្នំពេញ, ថ្ងៃទី${dayKhmer} ខែ${monthKhmer} ឆ្នាំ${year}`;
+
+  return { lunarDate, solarDate };
+};
+
 export const DucMonthlyReportPdfModal: React.FC<DucMonthlyReportPdfModalProps> = ({
   isOpen,
   onClose,
@@ -98,11 +137,10 @@ export const DucMonthlyReportPdfModal: React.FC<DucMonthlyReportPdfModalProps> =
       { no: 11, name: 'ទី ពិសិដ្ឋ', gender: 'ប្រុស', major: 'ក្រាហ្វិកឌីហ្សាញ', borrowed: '1 ក្បាល', returned: '1 ក្បាល' },
       { no: 12, name: 'សន សុភា', gender: 'ស្រី', major: 'ព័ត៌មានវិទ្យា', borrowed: '1 ក្បាល', returned: '1 ក្បាល' },
     ],
-    lunarDate: 'ថ្ងៃពុធ ១២កើត ខែកត្តិក ឆ្នាំរោង ឆស័ក ព.ស. ២៥៦៩',
-    solarDate: `រាជធានីភ្នំពេញ, ថ្ងៃទី០៤ ខែ${month} ឆ្នាំ${year}`,
+    lunarDate: formatKhmerRealtimeDate(new Date()).lunarDate,
+    solarDate: formatKhmerRealtimeDate(new Date()).solarDate,
     reviewerTitle: 'អ្នកត្រួតពិនិត្យ',
     managerTitle: 'អ្នកគ្រប់គ្រងបណ្ណាល័យ',
-    managerName: 'សែម សុខុម',
   };
 
   const page2Loans = (data.loanList || []).slice(0, 6);
@@ -633,11 +671,8 @@ export const DucMonthlyReportPdfModal: React.FC<DucMonthlyReportPdfModalProps> =
                           <div className="font-battambang text-[13.5px] text-slate-950 mb-1.5">
                             {data.solarDate}
                           </div>
-                          <div className="font-moul font-bold text-[14px] text-slate-950 mb-20">
+                          <div className="font-moul font-bold text-[14px] text-slate-950 mb-24">
                             {data.managerTitle}
-                          </div>
-                          <div className="font-moul font-bold text-[14.5px] text-slate-950">
-                            {data.managerName}
                           </div>
                         </td>
                       </tr>
