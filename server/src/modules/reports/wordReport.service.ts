@@ -134,6 +134,22 @@ export class WordReportService {
       console.warn('Could not load logo for Word report:', e);
     }
 
+    // Tacteing flourish image loading
+    let tacteingImageRun: ImageRun | null = null;
+    try {
+      const tacteingPath = path.resolve(process.cwd(), 'storage', 'tacteing.png');
+      if (fs.existsSync(tacteingPath)) {
+        const tacteingData = fs.readFileSync(tacteingPath);
+        tacteingImageRun = new ImageRun({
+          data: tacteingData,
+          transformation: { width: 95, height: 41 },
+          type: 'png',
+        } as any);
+      }
+    } catch (e) {
+      console.warn('Could not load tacteing image for Word report:', e);
+    }
+
     // Fetch unified monthly report data (benchmark or live database)
     const reportData = await MonthlyReportService.getMonthlyReportData(monthName, year, mode);
     const {
@@ -161,7 +177,7 @@ export class WordReportService {
         new TableRow({
           cantSplit: true,
           children: [
-            // Left Column
+            // Left Column (Logo centered above University Name)
             new TableCell({
               width: { size: 50, type: WidthType.PERCENTAGE },
               borders: noBorders,
@@ -169,14 +185,14 @@ export class WordReportService {
                 ...(logoImageRun
                   ? [
                       new Paragraph({
-                        alignment: AlignmentType.LEFT,
+                        alignment: AlignmentType.CENTER,
                         spacing: { line: 260, lineRule: 'auto', after: 60 },
                         children: [logoImageRun],
                       }),
                     ]
                   : []),
                 new Paragraph({
-                  alignment: AlignmentType.LEFT,
+                  alignment: AlignmentType.CENTER,
                   spacing: { line: 260, lineRule: 'auto', after: 40 },
                   children: [
                     new TextRun({
@@ -190,7 +206,7 @@ export class WordReportService {
                   ],
                 }),
                 new Paragraph({
-                  alignment: AlignmentType.LEFT,
+                  alignment: AlignmentType.CENTER,
                   spacing: { line: 260, lineRule: 'auto' },
                   children: [
                     new TextRun({
@@ -205,7 +221,7 @@ export class WordReportService {
                 }),
               ],
             }),
-            // Right Column: Kingdom Motto
+            // Right Column: Kingdom Motto & Tacteing
             new TableCell({
               width: { size: 50, type: WidthType.PERCENTAGE },
               borders: noBorders,
@@ -240,14 +256,16 @@ export class WordReportService {
                 }),
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
-                  children: [
-                    new TextRun({
-                      text: '🙢 🙠 🙢 🙠 🙢',
-                      size: 16,
-                      sizeComplexScript: 16,
-                      color: '475569',
-                    }),
-                  ],
+                  children: tacteingImageRun
+                    ? [tacteingImageRun]
+                    : [
+                        new TextRun({
+                          text: '🙢 🙠 🙢 🙠 🙢',
+                          size: 16,
+                          sizeComplexScript: 16,
+                          color: '475569',
+                        }),
+                      ],
                 }),
               ],
             }),

@@ -368,34 +368,43 @@ export const DucMonthlyReportPdfModal: React.FC<DucMonthlyReportPdfModalProps> =
                 <table className="w-full border-none mb-6">
                   <tbody>
                     <tr>
-                      {/* Left: DUC Logo & Name */}
+                      {/* Left: DUC Logo & Name (Logo centered relative to University Name) */}
                       <td className="w-1/2 align-top text-left border-none p-0">
-                        <img
-                          src="/logo.png"
-                          alt="DUC Logo"
-                          className="w-14 h-14 object-contain mb-1.5"
-                          onError={(e: any) => {
-                            e.target.style.display = 'none';
-                          }}
-                        />
-                        <div className="font-moul text-[14.5px] font-bold text-slate-950 mb-0.5">
-                          សាកលវិទ្យាល័យឌីជីថលកម្ពុជា
-                        </div>
-                        <div className="font-battambang text-[13.5px] font-bold text-slate-900">
-                          បណ្ណាល័យសិក្សា
+                        <div className="inline-flex flex-col items-center text-center">
+                          <img
+                            src="/logo.png"
+                            alt="DUC Logo"
+                            className="w-14 h-14 object-contain mb-1.5 mx-auto block"
+                            onError={(e: any) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                          <div className="font-moul text-[14.5px] font-bold text-slate-950 mb-0.5 text-center">
+                            សាកលវិទ្យាល័យឌីជីថលកម្ពុជា
+                          </div>
+                          <div className="font-battambang text-[13.5px] font-bold text-slate-900 text-center">
+                            បណ្ណាល័យសិក្សា
+                          </div>
                         </div>
                       </td>
 
-                      {/* Right: Royal Kingdom Motto */}
+                      {/* Right: Royal Kingdom Motto & Tacteing */}
                       <td className="w-1/2 align-top text-center border-none p-0">
                         <div className="font-moul text-[15px] font-bold text-slate-950 mb-1">
                           ព្រះរាជាណាចក្រកម្ពុជា
                         </div>
-                        <div className="font-moul text-[15px] font-bold text-slate-950 mb-1.5">
+                        <div className="font-moul text-[15px] font-bold text-slate-950 mb-1">
                           ជាតិ សាសនា ព្រះមហាក្សត្រ
                         </div>
-                        <div className="text-[14px] text-slate-600 tracking-widest">
-                          ៚ ៚ ៚
+                        <div className="flex justify-center items-center mt-1">
+                          <img
+                            src="/tacteing.png"
+                            alt="Tacteing"
+                            className="w-[125px] h-auto object-contain block mx-auto"
+                            onError={(e: any) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
                         </div>
                       </td>
                     </tr>
@@ -647,3 +656,4 @@ export const DucMonthlyReportPdfModal: React.FC<DucMonthlyReportPdfModalProps> =
     </div>
   );
 };
+

@@ -166,6 +166,17 @@ export class MonthlyReportService {
       console.warn('Could not read logo image:', e);
     }
 
+    let tacteingBase64 = '';
+    try {
+      const tacteingPath = path.resolve(process.cwd(), 'storage', 'tacteing.png');
+      if (fs.existsSync(tacteingPath)) {
+        const buf = fs.readFileSync(tacteingPath);
+        tacteingBase64 = `data:image/png;base64,${buf.toString('base64')}`;
+      }
+    } catch (e) {
+      console.warn('Could not read tacteing image:', e);
+    }
+
     // Split loanList into Page 2 (rows 1-6) and Page 3 (rows 7-12)
     const page2Loans = data.loanList.slice(0, 6);
     const page3Loans = data.loanList.slice(6);
@@ -429,26 +440,28 @@ export class MonthlyReportService {
       <!-- Top Header Table -->
       <table class="header-table">
         <tr>
-          <!-- Left: Logo & University Name -->
-          <td style="width: 50%; text-align: left;">
-            ${logoBase64 ? `<img src="${logoBase64}" alt="DUC Logo" style="width: 56px; height: 56px; object-fit: contain; margin-bottom: 6px;">` : ''}
-            <div class="font-moul" style="font-size: 14.5px; font-weight: bold; color: #000000; margin-bottom: 3px;">
-              សាកលវិទ្យាល័យឌីជីថលកម្ពុជា
-            </div>
-            <div class="font-battambang" style="font-size: 13.5px; font-weight: bold; color: #000000;">
-              បណ្ណាល័យសិក្សា
+          <!-- Left: Logo & University Name (Logo centered relative to University Name) -->
+          <td style="width: 50%; vertical-align: top; text-align: left;">
+            <div style="display: inline-flex; flex-direction: column; align-items: center; text-align: center;">
+              ${logoBase64 ? `<img src="${logoBase64}" alt="DUC Logo" style="width: 56px; height: 56px; object-fit: contain; margin: 0 auto 6px auto; display: block;">` : ''}
+              <div class="font-moul" style="font-size: 14.5px; font-weight: bold; color: #000000; margin-bottom: 3px; text-align: center;">
+                សាកលវិទ្យាល័យឌីជីថលកម្ពុជា
+              </div>
+              <div class="font-battambang" style="font-size: 13.5px; font-weight: bold; color: #000000; text-align: center;">
+                បណ្ណាល័យសិក្សា
+              </div>
             </div>
           </td>
-          <!-- Right: Royal Kingdom Header -->
-          <td style="width: 50%; text-align: center;">
+          <!-- Right: Royal Kingdom Header & Tacteing -->
+          <td style="width: 50%; vertical-align: top; text-align: center;">
             <div class="font-moul" style="font-size: 15px; font-weight: bold; color: #000000; margin-bottom: 4px;">
               ព្រះរាជាណាចក្រកម្ពុជា
             </div>
-            <div class="font-moul" style="font-size: 15px; font-weight: bold; color: #000000; margin-bottom: 6px;">
+            <div class="font-moul" style="font-size: 15px; font-weight: bold; color: #000000; margin-bottom: 4px;">
               ជាតិ សាសនា ព្រះមហាក្សត្រ
             </div>
-            <div style="font-size: 14px; letter-spacing: 2px; color: #475569;">
-              ៚ ៚ ៚
+            <div style="display: flex; justify-content: center; align-items: center; margin-top: 2px;">
+              ${tacteingBase64 ? `<img src="${tacteingBase64}" alt="Tacteing" style="width: 125px; height: auto; object-fit: contain; display: block; margin: 0 auto;">` : '<div style="font-size: 14px; letter-spacing: 2px; color: #475569;">៚ ៚ ៚</div>'}
             </div>
           </td>
         </tr>
@@ -672,3 +685,4 @@ export class MonthlyReportService {
 </html>`;
   }
 }
+
