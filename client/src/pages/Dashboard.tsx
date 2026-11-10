@@ -38,6 +38,7 @@ import {
   Send,
   ChevronDown,
   Check,
+  RotateCw,
 } from 'lucide-react';
 
 // Faculty Filter Categories
@@ -128,15 +129,36 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
   const { isStaff } = useAuth();
   const navigate = useNavigate();
 
-  // Metrics
-  const [loading, setLoading] = useState(true);
-  const [inventory, setInventory] = useState<any>(null);
+  // Metrics with instant local cache (0ms display)
+  const [loading, setLoading] = useState(false);
+  const [inventory, setInventory] = useState<any>(() => {
+    try {
+      const c = localStorage.getItem('duc_inv_cache');
+      return c ? JSON.parse(c) : null;
+    } catch {
+      return null;
+    }
+  });
   const [circulation, setCirculation] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
 
-  // Book Showcase State
-  const [books, setBooks] = useState<any[]>([]);
-  const [loadingBooks, setLoadingBooks] = useState(true);
+  // Book Showcase State with Instant Local Cache (0ms load)
+  const [books, setBooks] = useState<any[]>(() => {
+    try {
+      const c = localStorage.getItem('duc_featured_books_cache');
+      return c ? JSON.parse(c) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loadingBooks, setLoadingBooks] = useState<boolean>(() => {
+    try {
+      const c = localStorage.getItem('duc_featured_books_cache');
+      return !(c && JSON.parse(c).length > 0);
+    } catch {
+      return true;
+    }
+  });
   const [selectedFaculty, setSelectedFaculty] = useState('ALL');
   const [selectedDepartment, setSelectedDepartment] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -181,6 +203,7 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
   };
 
   useEffect(() => {
+    let isMounted = true;
     const fetchData = async () => {
       try {
         const [invRes, circRes, analyticsRes] = await Promise.all([
@@ -188,36 +211,51 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
           isStaff ? api.get('/reports/circulation').catch(() => ({ data: { data: null } })) : Promise.resolve({ data: { data: null } }),
           isStaff ? api.get('/reports/analytics').catch(() => ({ data: { data: null } })) : Promise.resolve({ data: { data: null } }),
         ]);
-        setInventory(invRes.data?.data);
-        setCirculation(circRes.data?.data);
-        setAnalytics(analyticsRes.data?.data);
+        if (isMounted) {
+          if (invRes.data?.data) {
+            setInventory(invRes.data.data);
+            try { localStorage.setItem('duc_inv_cache', JSON.stringify(invRes.data.data)); } catch {}
+          }
+          setCirculation(circRes.data?.data);
+          setAnalytics(analyticsRes.data?.data);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchData();
+    return () => { isMounted = false; };
   }, [isStaff]);
 
-  // Fetch Books for Showcase
+  // Fetch Books for Showcase (SWR - Stale While Revalidate)
   useEffect(() => {
+    let isMounted = true;
     const fetchBooks = async () => {
       try {
-        setLoadingBooks(true);
+        if (books.length === 0) {
+          setLoadingBooks(true);
+        }
         const res = await api.get('/books', {
           params: { limit: 100, sortBy: 'createdAt', sortOrder: 'desc' },
         });
         const items = Array.isArray(res.data?.data)
           ? res.data.data
           : (res.data?.data?.items || []);
-        setBooks(items);
+        if (isMounted && items.length > 0) {
+          setBooks(items);
+          try {
+            localStorage.setItem('duc_featured_books_cache', JSON.stringify(items));
+          } catch {}
+        }
       } catch (err) {
         console.error('Failed to load books for showcase', err);
       } finally {
-        setLoadingBooks(false);
+        if (isMounted) setLoadingBooks(false);
       }
     };
     fetchBooks();
+    return () => { isMounted = false; };
   }, []);
 
   // Filter books based on selected faculty, department and search query
@@ -634,8 +672,26 @@ export const Dashboard: React.FC<{ onOpenLoginModal: () => void }> = ({ onOpenLo
 
         {/* Books Grid with Visual Covers */}
         {loadingBooks ? (
-          <div className="py-16 text-center text-slate-400 text-sm">
-            កំពុងទាញយកបញ្ជីសៀវភៅ...
+          <div className="space-y-4">
+            <div className="flex items-center justify-center gap-2 p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-xs text-amber-800 animate-pulse">
+              <RotateCw className="w-3.5 h-3.5 animate-spin text-amber-600 shrink-0" />
+              <span>
+                កំពុងទាញយកទិន្នន័យពី Server បណ្ណាល័យ (កុំបារម្ភ ប្រព័ន្ធនឹងបង្ហាញភ្លាមៗ)...
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div
+                  key={i}
+                  className="bg-slate-50/80 rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-3.5 space-y-3 animate-pulse"
+                >
+                  <div className="h-36 sm:h-52 w-full bg-slate-200/70 rounded-lg sm:rounded-xl" />
+                  <div className="h-3 bg-slate-200 rounded w-4/5" />
+                  <div className="h-2 bg-slate-200/80 rounded w-1/2" />
+                  <div className="h-7 bg-slate-200/60 rounded-lg mt-2" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : filteredBooks.length === 0 ? (
           <div className="py-16 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
