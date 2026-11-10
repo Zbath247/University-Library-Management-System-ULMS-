@@ -16,7 +16,7 @@ import {
   VerticalAlign,
   IFontAttributesProperties,
 } from 'docx';
-import prisma from '../../db/prisma';
+import { MonthlyReportService } from './monthlyReport.service';
 
 export class WordReportService {
   /**
@@ -134,106 +134,18 @@ export class WordReportService {
       console.warn('Could not load logo for Word report:', e);
     }
 
-    // Benchmark data directly matching the official document
-    const benchmarkStudents = [
-      { no: 1, name: 'សុខ ដាវីដ', gender: 'ប្រុស', major: 'វិទ្យាសាស្ត្រកុំព្យូទ័រ' },
-      { no: 2, name: 'ចាន់ ណាវី', gender: 'ស្រី', major: 'ព័ត៌មានវិទ្យា' },
-      { no: 3, name: 'ហេង ធីតា', gender: 'ស្រី', major: 'ព័ត៌មានវិទ្យា' },
-      { no: 4, name: 'វ៉ាន់ វឌ្ឍនា', gender: 'ប្រុស', major: 'ព័ត៌មានវិទ្យា' },
-      { no: 5, name: 'ជួន សុជាតិ', gender: 'ប្រុស', major: 'ធុរកិច្ចឌីជីថល' },
-      { no: 6, name: 'គង់ សម្បត្តិ', gender: 'ប្រុស', major: 'វិទ្យាសាស្ត្រសេដ្ឋកិច្ច' },
-      { no: 7, name: 'ឡាយ ម៉ារី', gender: 'ស្រី', major: 'ធុរកិច្ចឌីជីថល' },
-      { no: 8, name: 'អ៊ឹម បូរិន', gender: 'ប្រុស', major: 'ព័ត៌មានវិទ្យា' },
-      { no: 9, name: 'ហុង ស្រីនី', gender: 'ស្រី', major: 'ព័ត៌មានវិទ្យា' },
-      { no: 10, name: 'សេង វិបុល', gender: 'ប្រុស', major: 'ព័ត៌មានវិទ្យា' },
-      { no: 11, name: 'មាស ចាន់ណា', gender: 'ស្រី', major: 'បង្រៀនភាសាអង់គ្លេស' },
-      { no: 12, name: 'អ៊ុក ដារ៉ូ', gender: 'ប្រុស', major: 'បង្រៀនភាសាអង់គ្លេស' },
-      { no: 13, name: 'សន សុភា', gender: 'ស្រី', major: 'ប្រព័ន្ធផ្សព្វផ្សាយសង្គម' },
-      { no: 14, name: 'ពេជ្រ វណ្ណា', gender: 'ប្រុស', major: 'វិទ្យាសាស្ត្រកុំព្យូទ័រ' },
-      { no: 15, name: 'ចេង ផល្លា', gender: 'ស្រី', major: 'វិទ្យាសាស្ត្រកុំព្យូទ័រ' },
-      { no: 16, name: 'ទី ពិសិដ្ឋ', gender: 'ប្រុស', major: 'ក្រាហ្វិកឌីហ្សាញ' },
-      { no: 17, name: 'ហេង សំណាង', gender: 'ប្រុស', major: 'បង្រៀនភាសាអង់គ្លេស' },
-      { no: 18, name: 'ផាត់ ពិសី', gender: 'ស្រី', major: 'បង្រៀនភាសាអង់គ្លេស' },
-      { no: 19, name: 'វ៉ៃ ស្សាឡន', gender: 'ស្រី', major: 'បង្រៀនភាសាអង់គ្លេស' },
-      { no: 20, name: 'លឹម សែម', gender: 'ប្រុស', major: 'សេដ្ឋកិច្ចឌីជីថល' },
-      { no: 21, name: 'ឃឹម ឡាលីន', gender: 'ស្រី', major: 'សេដ្ឋកិច្ចឌីជីថល' },
-      { no: 22, name: 'សឹង សុខុម', gender: 'ប្រុស', major: 'សេដ្ឋកិច្ចឌីជីថល' },
-      { no: 23, name: 'គុយលាង ស្រីម៉ី', gender: 'ស្រី', major: 'ធុរកិច្ចឌីជីថល' },
-      { no: 24, name: 'រស់ ស្រីម៉ៅ', gender: 'ស្រី', major: 'ធុរកិច្ចឌីជីថល' },
-      { no: 25, name: 'អ៊ុំ ពិសី', gender: 'ស្រី', major: 'ព័ត៌មានវិទ្យា' },
-      { no: 26, name: 'ថៃ គឹមស្រ៊ី', gender: 'ស្រី', major: 'ព័ត៌មានវិទ្យា' },
-      { no: 27, name: 'សឿង វណ្ណៈ', gender: 'ប្រុស', major: 'ព័ត៌មានវិទ្យា' },
-      { no: 28, name: 'ឌីក ស្រី', gender: 'ស្រី', major: 'ព័ត៌មានវិទ្យា' },
-      { no: 29, name: 'គឹម រ៉ូ', gender: 'ប្រុស', major: 'បញ្ញាសិប្បនិម្មិត និងមនុស្សយន្ត' },
-      { no: 30, name: 'ឡេង វុទ្ធី', gender: 'ប្រុស', major: 'ក្រាហ្វិកឌីហ្សាញ' },
-      { no: 31, name: 'ឈុន គឹមសួរ', gender: 'ប្រុស', major: 'ស្ថាបត្យកម្ម' },
-    ];
-
-    const benchmarkLoans = [
-      { no: 1, name: 'ហេង សំណាង', gender: 'ប្រុស', major: 'បង្រៀនភាសាអង់គ្លេស', borrowed: '1 ក្បាល', returned: '1 ក្បាល' },
-      { no: 2, name: 'ផាត់ ពិសី', gender: 'ស្រី', major: 'បង្រៀនភាសាអង់គ្លេស', borrowed: '1 ក្បាល', returned: '1 ក្បាល' },
-      { no: 3, name: 'ឡាយ ម៉ារី', gender: 'ស្រី', major: 'ធុរកិច្ចឌីជីថល', borrowed: '1 ក្បាល', returned: '1 ក្បាល' },
-      { no: 4, name: 'អ៊ឹម បូរិន', gender: 'ប្រុស', major: 'វិទ្យាសាស្ត្រកុំព្យូទ័រ', borrowed: '1 ក្បាល', returned: '1 ក្បាល' },
-      { no: 5, name: 'វ៉ាន់ វឌ្ឍនា', gender: 'ប្រុស', major: 'ព័ត៌មានវិទ្យា', borrowed: '1 ក្បាល', returned: '1 ក្បាល' },
-      { no: 6, name: 'គុយលាង ស្រីម៉ី', gender: 'ស្រី', major: 'ធុរកិច្ចឌីជីថល', borrowed: '1 ក្បាល', returned: '0 ក្បាល' },
-      { no: 7, name: 'គឹម រ៉ូ', gender: 'ប្រុស', major: 'បញ្ញាសិប្បនិម្មិត', borrowed: '1 ក្បាល', returned: '0 ក្បាល' },
-      { no: 8, name: 'សេង វិបុល', gender: 'ប្រុស', major: 'អភិវឌ្ឍន៍កម្មវិធី', borrowed: '1 ក្បាល', returned: '1 ក្បាល' },
-      { no: 9, name: 'ឡេង វុទ្ធី', gender: 'ប្រុស', major: 'ក្រាហ្វិកឌីហ្សាញ', borrowed: '1 ក្បាល', returned: '0 ក្បាល' },
-      { no: 10, name: 'ថៃ គឹមស្រ៊ី', gender: 'ស្រី', major: 'វិទ្យាសាស្ត្រកុំព្យូទ័រ', borrowed: '1 ក្បាល', returned: '0 ក្បាល' },
-      { no: 11, name: 'ទី ពិសិដ្ឋ', gender: 'ប្រុស', major: 'ក្រាហ្វិកឌីហ្សាញ', borrowed: '1 ក្បាល', returned: '1 ក្បាល' },
-      { no: 12, name: 'សន សុភា', gender: 'ស្រី', major: 'ព័ត៌មានវិទ្យា', borrowed: '1 ក្បាល', returned: '1 ក្បាល' },
-    ];
-
-    // If mode is 'live', fetch actual members from database
-    let studentsList = benchmarkStudents;
-    let loanList = benchmarkLoans;
-    let maleCount = 24;
-    let femaleCount = 17;
-    let totalReaders = 41;
-    let totalBorrowed = 12;
-    let totalReturned = 8;
-    let totalUnreturned = 4;
-
-    if (mode === 'live') {
-      try {
-        const liveMembers = await prisma.member.findMany({
-          orderBy: { createdAt: 'desc' },
-          take: 50,
-        });
-        if (liveMembers.length > 0) {
-          studentsList = liveMembers.map((m, idx) => ({
-            no: idx + 1,
-            name: m.fullNameKhmer || m.fullNameEnglish,
-            gender: idx % 2 === 0 ? 'ប្រុស' : 'ស្រី',
-            major: m.department?.split('>')?.pop()?.trim() || m.department || 'ព័ត៌មានវិទ្យា',
-          }));
-          maleCount = studentsList.filter((s) => s.gender === 'ប្រុស').length;
-          femaleCount = studentsList.filter((s) => s.gender === 'ស្រី').length;
-          totalReaders = studentsList.length;
-        }
-
-        const liveLoans = await prisma.loan.findMany({
-          take: 30,
-          include: { member: true, bookCopy: { include: { book: true } } },
-          orderBy: { issueDate: 'desc' },
-        });
-        if (liveLoans.length > 0) {
-          loanList = liveLoans.map((l, idx) => ({
-            no: idx + 1,
-            name: l.member?.fullNameKhmer || l.member?.fullNameEnglish || 'សិស្ស',
-            gender: idx % 2 === 0 ? 'ប្រុស' : 'ស្រី',
-            major: l.member?.department?.split('>')?.pop()?.trim() || 'ព័ត៌មានវិទ្យា',
-            borrowed: '1 ក្បាល',
-            returned: l.status === 'RETURNED' ? '1 ក្បាល' : '0 ក្បាល',
-          }));
-          totalBorrowed = liveLoans.length;
-          totalReturned = liveLoans.filter((l) => l.status === 'RETURNED').length;
-          totalUnreturned = totalBorrowed - totalReturned;
-        }
-      } catch (err) {
-        console.error('Error fetching live data for word report, falling back to benchmark:', err);
-      }
-    }
+    // Fetch unified monthly report data (benchmark or live database)
+    const reportData = await MonthlyReportService.getMonthlyReportData(monthName, year, mode);
+    const {
+      studentsList,
+      loanList,
+      maleCount,
+      femaleCount,
+      totalReaders,
+      totalBorrowed,
+      totalReturned,
+      totalUnreturned,
+    } = reportData;
 
     // -------------------------------------------------------------
     // BUILD THE DOCUMENT ELEMENTS

@@ -310,8 +310,14 @@ export const DucExecutiveReportModal: React.FC<DucExecutiveReportModalProps> = (
         }
         #duc-executive-sheet,
         #duc-executive-sheet * {
-          font-family: 'Kantumruy Pro', 'Battambang', 'Siemreap', sans-serif !important;
+          font-family: 'Khmer OS Battambang', 'Battambang', 'Kantumruy Pro', sans-serif !important;
           -webkit-font-smoothing: antialiased;
+        }
+        #duc-executive-sheet .font-moul,
+        #duc-executive-sheet h2,
+        #duc-executive-sheet h3,
+        #duc-executive-sheet th {
+          font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', 'Moul', 'Moulpali', serif !important;
         }
         #duc-executive-sheet table {
           border-collapse: collapse !important;

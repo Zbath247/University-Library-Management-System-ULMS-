@@ -14,6 +14,8 @@ export default {
       },
       fontFamily: {
         khmer: ['Kantumruy Pro', 'Battambang', 'system-ui', 'sans-serif'],
+        moul: ['Khmer OS Muol Light', 'Khmer OS Muol', 'Moul', 'Moulpali', 'serif'],
+        battambang: ['Khmer OS Battambang', 'Battambang', 'Kantumruy Pro', 'sans-serif'],
       },
       keyframes: {
         fadeIn: {

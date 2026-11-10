@@ -37,6 +37,7 @@ import {
   Printer,
 } from 'lucide-react';
 import { DucExecutiveReportModal } from '../components/DucExecutiveReportModal';
+import { DucMonthlyReportPdfModal } from '../components/DucMonthlyReportPdfModal';
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -67,6 +68,7 @@ export const Reports: React.FC = () => {
   const [inventory, setInventory] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showDucPdfModal, setShowDucPdfModal] = useState(false);
+  const [showMonthlyPdfModal, setShowMonthlyPdfModal] = useState(false);
 
   // CSV Import & Export State
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -218,11 +220,24 @@ export const Reports: React.FC = () => {
 
         <button
           type="button"
+          onClick={() => setShowMonthlyPdfModal(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl transition cursor-pointer whitespace-nowrap bg-rose-600/10 text-rose-900 hover:bg-rose-600/20 border border-rose-300 font-bold"
+          title="របាយការណ៍ប្រចាំខែ A4 ទម្រង់ PDF ប្រើពុម្ពអក្សរ Khmer OS Battambang និង Moul Light"
+        >
+          <FileText className="w-4 h-4 text-rose-600" />
+          <span className="flex items-center gap-1.5">
+            <span>📄 របាយការណ៍ប្រចាំខែ A4 (PDF ផ្លូវការ)</span>
+            <span className="px-1.5 py-0.5 text-[10px] bg-rose-600 text-white rounded font-bold">PDF</span>
+          </span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setShowDucPdfModal(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-xl transition cursor-pointer whitespace-nowrap bg-amber-500/10 text-amber-900 hover:bg-amber-500/20 border border-amber-300/40"
         >
-          <FileText className="w-4 h-4 text-amber-600" />
-          <span>📄 របាយការណ៍ផ្លូវការ DUC (Executive PDF Sheet)</span>
+          <PieChartIcon className="w-4 h-4 text-amber-600" />
+          <span>📈 ផ្ទាំងក្រាហ្វិក DUC (Executive Sheet)</span>
         </button>
 
         <button
@@ -749,6 +764,12 @@ export const Reports: React.FC = () => {
       <DucExecutiveReportModal
         isOpen={showDucPdfModal}
         onClose={() => setShowDucPdfModal(false)}
+      />
+
+      {/* DUC Official Monthly Administrative Report (A4 PDF - Khmer OS Battambang & Moul Light) */}
+      <DucMonthlyReportPdfModal
+        isOpen={showMonthlyPdfModal}
+        onClose={() => setShowMonthlyPdfModal(false)}
       />
     </div>
   );
